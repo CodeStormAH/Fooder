@@ -1,9 +1,9 @@
 package org.ulpgc.codestormah.alcampo.control;
 
-import org.ulpgc.codestormah.alcampo.model.Products;
+import org.ulpgc.codestormah.alcampo.model.Product;
 
 import java.util.List;
 
 public interface AlcampoFeeder {
-    List<Products> fetchProducts();
+    List<Product> fetchProducts();
 }
