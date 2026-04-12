@@ -1,6 +1,6 @@
-package control;
+package org.ulpgc.codestormah.alcampo.control;
 
-import model.Products;
+import org.ulpgc.codestormah.alcampo.model.Products;
 
 import java.util.List;
 
