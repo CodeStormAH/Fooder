@@ -9,76 +9,107 @@ public class DatabaseProductSerializer implements ProductSerializer {
 
     private static final String DB_PATH = "jdbc:sqlite:mercadona.db";
 
+    private static final String CREATE_PRODUCTS_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS products (" +
+                    "id TEXT PRIMARY KEY," +
+                    "name TEXT," +
+                    "normalized_name TEXT," +
+                    "brand TEXT," +
+                    "category TEXT," +
+                    "amount REAL," +
+                    "unit TEXT);";
+
+    private static final String CREATE_PRICES_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS prices (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "product_id TEXT," +
+                    "unit_price REAL," +
+                    "on_offer BOOLEAN," +
+                    "date TEXT," +
+                    "FOREIGN KEY(product_id) REFERENCES products(id));";
+
+    private static final String INSERT_PRODUCTS_SQL =
+            "INSERT OR IGNORE INTO products " +
+                    "(id, name, normalized_name, brand, category, amount, unit) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+    private static final String INSERT_PRICES_SQL =
+            "INSERT INTO prices " +
+                    "(product_id, unit_price, on_offer, date) " +
+                    "VALUES (?, ?, ?, datetime('now'))";
+
     @Override
     public void save(List<Product> products) {
-        try (Connection conn = DriverManager.getConnection(DB_PATH)) {
-            createTables(conn);
-            insertProducts(products, conn);
-            insertPrices(products, conn);
-            System.out.println("Saved " + products.size() + " products.");
-        } catch (SQLException exception) {
-            exception.printStackTrace();
+        try (Connection conn = connect()) {
+            initDatabase(conn);
+            persist(products, conn);
+            log(products);
+        } catch (SQLException e) {
+            handleError(e);
         }
+    }
+
+    private Connection connect() throws SQLException {
+        return DriverManager.getConnection(DB_PATH);
+    }
+
+    private void initDatabase(Connection conn) throws SQLException {
+        createTables(conn);
+    }
+
+    private void persist(List<Product> products, Connection conn) throws SQLException {
+        insertProducts(products, conn);
+        insertPrices(products, conn);
+    }
+
+    private void log(List<Product> products) {
+        System.out.println("Saved " + products.size() + " products.");
+    }
+
+    private void handleError(SQLException e) {
+        e.printStackTrace();
     }
 
     private void createTables(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
-            stmt.execute(
-                    "CREATE TABLE IF NOT EXISTS products (" +
-                            "id TEXT PRIMARY KEY," +
-                            "name TEXT," +
-                            "normalized_name TEXT," +
-                            "brand TEXT," +
-                            "category TEXT," +
-                            "amount REAL," +
-                            "unit TEXT);"
-            );
-
-            stmt.execute(
-                    "CREATE TABLE IF NOT EXISTS prices (" +
-                            "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                            "product_id TEXT," +
-                            "unit_price REAL," +
-                            "on_offer BOOLEAN," +
-                            "date TEXT," +
-                            "FOREIGN KEY(product_id) REFERENCES products(id));"
-            );
+            stmt.execute(CREATE_PRODUCTS_TABLE_SQL);
+            stmt.execute(CREATE_PRICES_TABLE_SQL);
         }
     }
 
     private void insertProducts(List<Product> products, Connection conn) throws SQLException {
-        String sql = "INSERT OR IGNORE INTO products " +
-                "(id, name, normalized_name, brand, category, amount, unit) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(INSERT_PRODUCTS_SQL)) {
             for (Product p : products) {
-                ps.setString(1, p.getId());
-                ps.setString(2, p.getName());
-                ps.setString(3, p.getNormalizedName());
-                ps.setString(4, p.getBrand());
-                ps.setString(5, p.getCategory());
-                ps.setDouble(6, p.getAmount());
-                ps.setString(7, p.getUnit());
+                fillProduct(ps, p);
                 ps.addBatch();
             }
             ps.executeBatch();
         }
     }
 
-    private void insertPrices(List<Product> products, Connection conn) throws SQLException {
-        String sql = "INSERT INTO prices " +
-                "(product_id, unit_price, on_offer, date) " +
-                "VALUES (?, ?, ?, datetime('now'))";
+    private void fillProduct(PreparedStatement ps, Product p) throws SQLException {
+        ps.setString(1, p.id());
+        ps.setString(2, p.name());
+        ps.setString(3, p.normalizedName());
+        ps.setString(4, p.brand());
+        ps.setString(5, p.category());
+        ps.setDouble(6, p.amount());
+        ps.setString(7, p.unit());
+    }
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+    private void insertPrices(List<Product> products, Connection conn) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(INSERT_PRICES_SQL)) {
             for (Product p : products) {
-                ps.setString(1, p.getId());
-                ps.setDouble(2, p.getUnitPrice());
-                ps.setBoolean(3, p.isOnOffer());
+                fillPrice(ps, p);
                 ps.addBatch();
             }
             ps.executeBatch();
         }
+    }
+
+    private void fillPrice(PreparedStatement ps, Product p) throws SQLException {
+        ps.setString(1, p.id());
+        ps.setDouble(2, p.unitPrice());
+        ps.setBoolean(3, p.onOffer());
     }
 }
