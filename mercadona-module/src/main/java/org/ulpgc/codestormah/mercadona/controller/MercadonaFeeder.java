@@ -16,57 +16,70 @@ public class MercadonaFeeder implements ProductFeeder {
 
     @Override
     public List<Product> getProducts(int limit) throws IOException {
-        List<Product> products = new ArrayList<>();
-        Set<String> ids = new HashSet<>();
-        for (JsonElement cat : getCategories()) processCategory(cat, products, ids, limit);
-        return products;
+        return loadProducts(limit);
     }
 
-    private JsonArray getCategories() throws IOException {
-        return getJson("/api/categories/").getAsJsonArray("results");
+    private List<Product> loadProducts(int limit) throws IOException {
+        ProductContext ctx = new ProductContext(limit);
+
+        for (JsonElement cat : getCategories()) {
+            processCategory(cat, ctx);
+        }
+
+        return limit == -1
+                ? ctx.getProducts()
+                : ctx.getProducts().subList(0, Math.min(limit, ctx.getProducts().size()));
     }
 
-    private void processCategory(JsonElement category, List<Product> products, Set<String> ids, int limit) throws IOException {
-        JsonArray subcategories = category.getAsJsonObject().getAsJsonArray("categories");
+    private void processCategory(JsonElement category, ProductContext ctx) throws IOException {
+        JsonArray subcategories = extractSubcategoriesArray(category);
         if (subcategories == null) return;
-        for (JsonElement subcategory : subcategories) processSubcategory(subcategory, products, ids, limit);
+
+        for (JsonElement sub : subcategories) {
+            processSubcategory(sub, ctx);
+        }
     }
 
-    private void processSubcategory(JsonElement subcategory, List<Product> products, Set<String> ids, int limit) throws IOException {
+    private void processSubcategory(JsonElement subcategory, ProductContext ctx) throws IOException {
         JsonObject obj = subcategory.getAsJsonObject();
-        JsonArray inner = getJson("/api/categories/" + obj.get("id").getAsInt()).getAsJsonArray("categories");
+        JsonArray inner = fetchInnerCategories(obj);
+
         if (inner == null) return;
-        for (JsonElement i : inner) processInnerCategory(i, obj.get("name").getAsString(), products, ids, limit);
+
+        String categoryName = obj.get("name").getAsString();
+
+        for (JsonElement i : inner) {
+            processProductList(i, categoryName, ctx);
+        }
     }
 
-    private void processInnerCategory(JsonElement inner, String category, List<Product> products, Set<String> ids, int limit) {
-        JsonArray arr = inner.getAsJsonObject().getAsJsonArray("products");
-        if (arr == null) return;
-        for (JsonElement p : arr) processProduct(p, category, products, ids, limit);
+    private void processProductList(JsonElement inner, String category, ProductContext ctx) {
+        JsonArray productsArray = extractProductsArray(inner);
+        if (productsArray == null) return;
+
+        for (JsonElement p : productsArray) {
+            processProduct(p, category, ctx);
+        }
     }
 
-    private void processProduct(JsonElement elem, String category, List<Product> products, Set<String> ids, int limit) {
-        if (limit != -1 && products.size() >= limit) return;
-        JsonObject p = elem.getAsJsonObject();
-        if (!isValid(p) || !ids.add(getId(p))) return;
-        products.add(createProduct(p, category));
+    private void processProduct(JsonElement elem, String category, ProductContext ctx) {
+
+        JsonObject product = elem.getAsJsonObject();
+        String id = getId(product);
+
+        if (!isValidProduct(product) || ctx.isDuplicateProduct(id)) return;
+
+        ctx.addProduct(mapToProduct(product, category));
     }
 
-    private boolean isValid(JsonObject p) {
-        return p.has("id") &&
-                p.has("display_name") &&
-                p.has("price_instructions") &&
-                p.getAsJsonObject("price_instructions").has("unit_price");
-    }
-
-    private Product createProduct(JsonObject p, String category) {
+    private Product mapToProduct(JsonObject p, String category) {
         JsonObject price = getPrice(p);
 
         return new Product(
                 getId(p),
                 getName(p),
-                getNormalizedName(p),
-                getBrand(p),
+                normalizeName(p),
+                extractBrand(p),
                 category,
                 getUnitPrice(price),
                 getUnit(price),
@@ -75,12 +88,27 @@ public class MercadonaFeeder implements ProductFeeder {
         );
     }
 
-    private String getBrand(JsonObject p) {
+    private String extractBrand(JsonObject p) {
         return ProductTextNormalizer.extractBrand(getName(p));
     }
 
-    private String getNormalizedName(JsonObject p) {
+    private String normalizeName(JsonObject p) {
         return ProductTextNormalizer.normalizeName(getName(p));
+    }
+
+    private JsonArray getCategories() throws IOException {
+        return extractResultsArray(executeHttpRequest("/api/categories/"));
+    }
+
+    private boolean isValidProduct(JsonObject p) {
+        return p.has("id") &&
+                p.has("display_name") &&
+                p.has("price_instructions") &&
+                p.getAsJsonObject("price_instructions").has("unit_price");
+    }
+
+    private JsonArray extractResultsArray(JsonObject json) {
+        return json.getAsJsonArray("results");
     }
 
     private String getName(JsonObject p) {
@@ -89,6 +117,10 @@ public class MercadonaFeeder implements ProductFeeder {
 
     private String getId(JsonObject p) {
         return p.get("id").getAsString();
+    }
+
+    private JsonObject getPrice(JsonObject p) {
+        return p.getAsJsonObject("price_instructions");
     }
 
     private double getUnitPrice(JsonObject price) {
@@ -101,10 +133,6 @@ public class MercadonaFeeder implements ProductFeeder {
                 : 1;
     }
 
-    private JsonObject getPrice(JsonObject p) {
-        return p.getAsJsonObject("price_instructions");
-    }
-
     private String getUnit(JsonObject price) {
         return price.has("size_format") && !price.get("size_format").isJsonNull()
                 ? price.get("size_format").getAsString()
@@ -112,26 +140,70 @@ public class MercadonaFeeder implements ProductFeeder {
     }
 
     private boolean isOnOffer(JsonObject price) {
-        return price.has("price_decreased") &&
-                !price.get("price_decreased").isJsonNull() &&
-                price.get("price_decreased").getAsBoolean();
+        return price.has("price_decreased")
+                && !price.get("price_decreased").isJsonNull()
+                && price.get("price_decreased").getAsBoolean();
     }
 
-    private JsonObject getJson(String path) throws IOException {
-        int attempts = 0;
+    private JsonArray fetchInnerCategories(JsonObject obj) throws IOException {
+        return executeHttpRequest("/api/categories/" + obj.get("id").getAsInt())
+                .getAsJsonArray("categories");
+    }
 
-        while(attempts < MAX_ATTEMPTS) {
+    private JsonArray extractSubcategoriesArray(JsonElement category) {
+        return category.getAsJsonObject().getAsJsonArray("categories");
+    }
+
+    private JsonArray extractProductsArray(JsonElement inner) {
+        return inner.getAsJsonObject().getAsJsonArray("products");
+    }
+
+    private JsonObject fetchJson(String path) throws IOException {
+        for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
             try {
-                Connection.Response res = Jsoup.connect(BASE_URL + path)
-                        .ignoreContentType(true)
-                        .timeout(TIMEOUT_MS)
-                        .header("Accept", "application/json")
-                        .header("User-Agent", "Mozilla/5.0")
-                        .method(Connection.Method.GET)
-                        .execute();
-                return JsonParser.parseString(res.body()).getAsJsonObject();
-            } catch (java.net.SocketTimeoutException e) { attempts++; }
+                return parseResponse(sendRequest(path));
+            } catch (java.net.SocketTimeoutException ignored) {}
         }
         throw new IOException("Failed to fetch JSON from " + path);
+    }
+
+    private JsonObject executeHttpRequest(String path) throws IOException {
+        return fetchJson(path);
+    }
+
+    private JsonObject parseResponse(Connection.Response res) {
+        return JsonParser.parseString(res.body()).getAsJsonObject();
+    }
+
+    private Connection.Response sendRequest(String path) throws IOException {
+        return Jsoup.connect(BASE_URL + path)
+                .ignoreContentType(true)
+                .timeout(TIMEOUT_MS)
+                .header("Accept", "application/json")
+                .header("User-Agent", "Mozilla/5.0")
+                .method(Connection.Method.GET)
+                .execute();
+    }
+
+    private static class ProductContext {
+        private final List<Product> products = new ArrayList<>();
+        private final Set<String> ids = new HashSet<>();
+        private final int limit;
+
+        ProductContext(int limit) {
+            this.limit = limit;
+        }
+
+        boolean isDuplicateProduct(String id) {
+            return !ids.add(id);
+        }
+
+        void addProduct(Product product) {
+            products.add(product);
+        }
+
+        List<Product> getProducts() {
+            return products;
+        }
     }
 }

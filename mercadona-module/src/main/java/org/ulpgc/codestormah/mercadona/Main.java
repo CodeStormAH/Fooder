@@ -3,7 +3,7 @@ package org.ulpgc.codestormah.mercadona;
 import org.ulpgc.codestormah.mercadona.controller.*;
 
 public class Main {
-    public static void main(String[] args) {
+    static void main() {
         try {
             ProductFeeder feeder = new MercadonaFeeder();
             ProductSerializer serializer = new DatabaseProductSerializer();
@@ -12,7 +12,7 @@ public class Main {
             controller.execute(-1);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Application error: " + e.getMessage());
         }
     }
 }
