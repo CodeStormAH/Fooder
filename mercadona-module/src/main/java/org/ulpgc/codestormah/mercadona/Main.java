@@ -5,14 +5,14 @@ import org.ulpgc.codestormah.mercadona.controller.*;
 public class Main {
     static void main() {
         try {
-            ProductFeeder feeder = new MercadonaFeeder();
-            ProductSerializer serializer = new DatabaseProductSerializer();
+            ProductFeeder productFeeder = new MercadonaFeeder();
+            ProductSerializer productSerializer = new DatabaseProductSerializer();
 
-            Controller controller = new Controller(feeder, serializer);
+            Controller controller = new Controller(productFeeder, productSerializer);
             controller.execute(-1);
 
-        } catch (Exception e) {
-            System.err.println("Application error: " + e.getMessage());
+        } catch (Exception exception) {
+            System.err.println("Application error: " + exception.getMessage());
         }
     }
 }
