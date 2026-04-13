@@ -5,5 +5,5 @@ import java.io.IOException;
 import java.util.List;
 
 public interface ProductFeeder {
-    List<Product> getProducts(int limit) throws IOException;
+    List<Product> getProducts(int maxProducts) throws IOException;
 }
