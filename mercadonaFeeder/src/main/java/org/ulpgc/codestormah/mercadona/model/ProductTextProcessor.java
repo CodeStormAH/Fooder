@@ -18,11 +18,7 @@ public class ProductTextProcessor {
         String normalized = rawName.toLowerCase();
 
         return normalized.contains(HACENDADO)
-                ? capitalize(HACENDADO)
+                ? "Hacendado"
                 : DEFAULT_BRAND;
-    }
-
-    private static String capitalize(String value) {
-        return value.substring(0, 1).toUpperCase() + value.substring(1);
     }
 }
