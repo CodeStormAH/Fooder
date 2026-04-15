@@ -4,11 +4,10 @@ import org.ulpgc.codestormah.mercadona.model.Product;
 
 import java.sql.*;
 import java.util.List;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
-public class DatabaseProductSerializer implements ProductSerializer {
-
-    private static final String DB_PATH = "jdbc:sqlite:mercadona.db";
-
+public class DatabaseProductStore implements ProductSerializer {
     private static final String CREATE_PRODUCTS_TABLE_SQL =
             "CREATE TABLE IF NOT EXISTS products (" +
                     "id TEXT PRIMARY KEY," +
@@ -40,9 +39,9 @@ public class DatabaseProductSerializer implements ProductSerializer {
 
     private final String dbPath;
 
-    private static final Logger logger = Logger.getLogger(DatabaseProductSerializer.class.getName());
+    private static final Logger logger = Logger.getLogger(DatabaseProductStore.class.getName());
 
-    public DatabaseProductSerializer(String dbPath) {
+    public DatabaseProductStore(String dbPath) {
         this.dbPath = dbPath;
     }
 
@@ -58,7 +57,7 @@ public class DatabaseProductSerializer implements ProductSerializer {
     }
 
     private Connection openConnection() throws SQLException {
-        return DriverManager.getConnection(DB_PATH);
+        return DriverManager.getConnection(dbPath);
     }
 
     private void initializeDatabase(Connection connection) throws SQLException {
@@ -75,7 +74,7 @@ public class DatabaseProductSerializer implements ProductSerializer {
     }
 
     private void handleDatabaseException(SQLException exception) {
-        exception.printStackTrace();
+        logger.log(Level.SEVERE, "Database error", exception);
     }
 
     private void createDatabaseTables(Connection connection) throws SQLException {
