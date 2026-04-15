@@ -16,7 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <artifactId>mercadona-module</artifactId>
+    <artifactId>mercadonaFeeder</artifactId>
 
     <dependencies>
         <dependency>

@@ -11,7 +11,7 @@
 
     <modules>
         <module>alcampo-module</module>
-        <module>mercadona-module</module>
+        <module>mercadonaFeeder</module>
     </modules>
 
 </project>

@@ -72,12 +72,10 @@ public class MercadonaFeeder implements ProductFeeder {
 
     private void processProduct(JsonElement productElement, String categoryName, ProductAccumulator accumulator) {
         JsonObject productJson = productElement.getAsJsonObject();
-        String productId = extractProductId(productJson);
 
         if (!isValidProduct(productJson)) return;
 
-        boolean added = accumulator.add(mapToProduct(productJson, categoryName));
-        if (!added) return;
+        accumulator.add(mapToProduct(productJson, categoryName));
     }
 
     private Product mapToProduct(JsonObject productJson, String categoryName) {
@@ -198,12 +196,11 @@ public class MercadonaFeeder implements ProductFeeder {
             this.limit = limit;
         }
 
-        boolean add(Product product) {
-            if (!ids.add(product.id())) return false;
-            if (limit != -1 && products.size() >= limit) return false;
+        void add(Product product) {
+            if (!ids.add(product.id())) return;
+            if (limit != -1 && products.size() >= limit) return;
 
             products.add(product);
-            return true;
         }
 
         List<Product> getAllProducts() {
