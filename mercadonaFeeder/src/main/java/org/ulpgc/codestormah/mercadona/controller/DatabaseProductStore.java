@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-public class DatabaseProductStore implements ProductSerializer {
+public class DatabaseProductStore implements ProductStore {
     private static final String CREATE_PRODUCTS_TABLE_SQL =
             "CREATE TABLE IF NOT EXISTS products (" +
                     "id TEXT PRIMARY KEY," +

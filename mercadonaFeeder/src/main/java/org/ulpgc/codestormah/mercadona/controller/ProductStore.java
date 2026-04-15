@@ -5,6 +5,6 @@ import org.ulpgc.codestormah.mercadona.model.Product;
 import java.sql.SQLException;
 import java.util.List;
 
-public interface ProductSerializer {
+public interface ProductStore {
     void save(List<Product> products) throws SQLException;
 }

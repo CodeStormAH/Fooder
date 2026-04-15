@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
-public record Controller(ProductFeeder feeder, ProductSerializer serializer) {
+public record Controller(ProductFeeder feeder, ProductStore serializer) {
     public void execute(int maxProducts) throws IOException, SQLException {
         List<Product> products = feeder.getProducts(maxProducts);
         System.out.println("Products fetched: " + products.size());
