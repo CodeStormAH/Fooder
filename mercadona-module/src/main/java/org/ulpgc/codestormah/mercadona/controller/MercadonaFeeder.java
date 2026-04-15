@@ -10,10 +10,15 @@ import java.io.IOException;
 import java.util.*;
 
 public class MercadonaFeeder implements ProductFeeder {
-    private static final String BASE_URL = "https://tienda.mercadona.es";
     private static final int MAX_ATTEMPTS = 3;
     private static final int TIMEOUT_MS = 15000;
-    private static final String CATEGORIES_PATH = "/api/categories/";
+    private final String categoriesPath;
+    private final String apiUrl;
+
+    public MercadonaFeeder(String apiUrl, String categoriesPath) {
+        this.apiUrl = apiUrl;
+        this.categoriesPath = categoriesPath;
+    }
 
     @Override
     public List<Product> getProducts(int maxProducts) throws IOException {
@@ -107,11 +112,11 @@ public class MercadonaFeeder implements ProductFeeder {
     }
 
     private JsonArray fetchCategories() throws IOException {
-        return extractResultsArray(fetchJson(CATEGORIES_PATH));
+        return extractResultsArray(fetchJson(categoriesPath));
     }
 
     private JsonArray fetchNestedCategories(JsonObject categoryJson) throws IOException {
-        return fetchJson(CATEGORIES_PATH + categoryJson.get("id").getAsInt())
+        return fetchJson(categoriesPath + categoryJson.get("id").getAsInt())
                 .getAsJsonArray("categories");
     }
 
@@ -125,7 +130,7 @@ public class MercadonaFeeder implements ProductFeeder {
     }
 
     private Connection.Response sendRequest(String path) throws IOException {
-        return Jsoup.connect(BASE_URL + path)
+        return Jsoup.connect(apiUrl + path)
                 .ignoreContentType(true)
                 .timeout(TIMEOUT_MS)
                 .header("Accept", "application/json")

@@ -38,6 +38,14 @@ public class DatabaseProductSerializer implements ProductSerializer {
                     "(product_id, unit_price, on_offer, date) " +
                     "VALUES (?, ?, ?, datetime('now'))";
 
+    private final String dbPath;
+
+    private static final Logger logger = Logger.getLogger(DatabaseProductSerializer.class.getName());
+
+    public DatabaseProductSerializer(String dbPath) {
+        this.dbPath = dbPath;
+    }
+
     @Override
     public void save(List<Product> products) {
         try (Connection connection = openConnection()) {
