@@ -2,20 +2,29 @@ package org.ulpgc.codestormah.alcampo.control;
 
 import org.ulpgc.codestormah.alcampo.model.Product;
 
+import java.io.File;
 import java.sql.*;
 import java.util.List;
 
 public class DatabaseAlcampoSerializer implements AlcampoSerializer {
 
-    private static final String DB_PATH = "jdbc:sqlite:alcampo.db";
+    private final String jdbcUrl;
+
+    // Aquí está el constructor exacto que pidió tu profesor
+    public DatabaseAlcampoSerializer(File dbFile) {
+        // Obtenemos la ruta absoluta del archivo y le añadimos el prefijo de SQLite.
+        // Esto asegura que el archivo se cree exactamente donde debe.
+        this.jdbcUrl = "jdbc:sqlite:" + dbFile.getAbsolutePath();
+    }
 
     @Override
-    public void serialize(List<Product> productos) {
-        try (Connection conn = DriverManager.getConnection(DB_PATH)) {
+    public void serialize(List<Product> products) {
+        // Usamos la URL que hemos construido en el constructor
+        try (Connection conn = DriverManager.getConnection(this.jdbcUrl)) {
             crearTablas(conn);
-            insertarProductos(productos, conn);
-            insertarPrecios(productos, conn);
-            System.out.println("Datos guardados correctamente en la base de datos.");
+            insertarProductos(products, conn);
+            insertarPrecios(products, conn);
+            System.out.println("Datos guardados correctamente en: " + this.jdbcUrl);
         } catch (SQLException e) {
             System.err.println("Error al guardar en la base de datos: " + e.getMessage());
             e.printStackTrace();
@@ -41,7 +50,7 @@ public class DatabaseAlcampoSerializer implements AlcampoSerializer {
                             "product_id TEXT," +
                             "precio_unidad REAL," +
                             "en_oferta BOOLEAN," +
-                            "fecha TEXT DEFAULT (datetime('now'))," + // Marca temporal requerida por el profesor
+                            "fecha TEXT DEFAULT (datetime('now'))," +
                             "FOREIGN KEY(product_id) REFERENCES alcampo_products(id))"
             );
         }
@@ -64,11 +73,11 @@ public class DatabaseAlcampoSerializer implements AlcampoSerializer {
         }
     }
 
-    private void insertarPrecios(List<Product> productos, Connection conn) throws SQLException {
+    private void insertarPrecios(List<Product> products, Connection conn) throws SQLException {
         String sql = "INSERT INTO alcampo_prices (product_id, precio_unidad, en_oferta, fecha) " +
                 "VALUES (?, ?, ?, datetime('now'))";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            for (Product p : productos) {
+            for (Product p : products) {
                 ps.setString(1, p.getId());
                 ps.setDouble(2, p.getUnitPrice());
                 ps.setBoolean(3, p.isOnOffer());

@@ -15,6 +15,12 @@ import java.util.Map;
 import java.util.UUID;
 
 public class AlcampoScraperFeeder implements AlcampoFeeder {
+    private final String url;
+
+    // Constructor que recibe la URL desde el Main
+    public AlcampoScraperFeeder(String url) {
+        this.url = url;
+    }
 
     @Override
     public List<Product> fetchProducts() {
@@ -25,7 +31,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         Map<String, Product> productosExtraidos = new HashMap<>();
 
         try {
-            driver.get("https://www.compraonline.alcampo.es/categories?source=navigation");
+            driver.get(this.url);
             Thread.sleep(5000);
 
             try {
