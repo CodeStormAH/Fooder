@@ -4,7 +4,7 @@ import org.ulpgc.codestormah.alcampo.model.Product;
 
 import java.util.List;
 
-public interface AlcampoSerializer {
-    void serialize(List<Product> productos);
+public interface AlcampoStore {
+    void store(List<Product> products);
 }
 

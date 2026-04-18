@@ -25,20 +25,20 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
     public List<Product> fetchProducts() {
         ChromeOptions options = new ChromeOptions();
 
-        // --- OPTIMIZACIONES DE VELOCIDAD ---
-        options.addArguments("--headless=new"); // Modo invisible (comenta esta línea si quieres ver qué hace)
+        // --- SPEED OPTIMIZATIONS ---
+        options.addArguments("--headless=new");
         options.addArguments("--start-maximized");
-        options.addArguments("--blink-settings=imagesEnabled=false"); // DESACTIVA IMÁGENES
-        options.addArguments("--disable-blink-features=AutomationControlled"); // Menos detectable
+        options.addArguments("--blink-settings=imagesEnabled=false"); // DISABLE IMAGES
+        options.addArguments("--disable-blink-features=AutomationControlled"); // Less detectable
 
         WebDriver driver = new ChromeDriver(options);
-        Map<String, Product> productosExtraidos = new HashMap<>();
+        Map<String, Product> extractedProducts = new HashMap<>();
 
         try {
             driver.get(this.url);
             Thread.sleep(4000);
 
-            // Aceptar cookies rápido
+            // Accept cookies quickly
             try {
                 driver.findElement(By.id("onetrust-accept-btn-handler")).click();
             } catch (Exception e) {}
@@ -47,68 +47,78 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             int lastCount = 0;
             int sameCountTimes = 0;
 
-            System.out.println("Iniciando extracción optimizada (sin imágenes)...");
+            System.out.println("Starting optimized extraction (no images)...");
 
             while (sameCountTimes < 5) {
-                List<WebElement> productosWeb = driver.findElements(
+                List<WebElement> webElements = driver.findElements(
                         By.cssSelector("[data-retailer-anchor='product-list'] div[data-test^='fop-wrapper']")
                 );
 
-                for (WebElement producto : productosWeb) {
+                for (WebElement element : webElements) {
                     try {
-                        String nombre = producto.findElement(By.cssSelector("[data-test='fop-title']")).getText();
-                        if (!productosExtraidos.containsKey(nombre) && !nombre.isEmpty()) {
-                            // ... (aquí va el resto de tu lógica de extracción de precio, peso, etc.)
-                            // Mantén el código igual que lo tenías dentro de este IF
-                            String precio = producto.findElement(By.cssSelector("[data-test='fop-price']")).getText();
-                            String peso = producto.findElement(By.cssSelector("[data-test='fop-size']")).getText();
-                            double precioNum = parsearPrecio(precio);
-                            double cantidadNum = parsearCantidad(peso);
-                            String unidadStr = parsearUnidad(peso);
-                            String marca = extraerMarca(nombre);
+                        String name = element.findElement(By.cssSelector("[data-test='fop-title']")).getText();
+                        if (!extractedProducts.containsKey(name) && !name.isEmpty()) {
+
+                            String priceText = element.findElement(By.cssSelector("[data-test='fop-price']")).getText();
+                            String sizeText = element.findElement(By.cssSelector("[data-test='fop-size']")).getText();
+
+                            double priceValue = parsePrice(priceText);
+                            double quantityValue = parseQuantity(sizeText);
+                            String unitValue = parseUnit(sizeText);
+                            String brandValue = extractBrand(name);
                             String id = UUID.randomUUID().toString();
 
-                            productosExtraidos.put(nombre, new Product(id, nombre, nombre.toLowerCase(), marca, "categoria_general", precioNum, unidadStr, cantidadNum, false));
+                            extractedProducts.put(name, new Product(
+                                    id,
+                                    name,
+                                    name.toLowerCase(),
+                                    brandValue,
+                                    "general_category",
+                                    priceValue,
+                                    unitValue,
+                                    quantityValue,
+                                    false
+                            ));
                         }
                     } catch (Exception e) {}
                 }
 
-                // Scroll un poco más agresivo y espera más corta
+                // Smooth scroll and wait
                 js.executeScript("window.scrollBy(0, 1000);");
-                Thread.sleep(800); // Bajamos de 1500ms a 800ms
+                Thread.sleep(800);
 
-                if (productosExtraidos.size() == lastCount) {
+                if (extractedProducts.size() == lastCount) {
                     sameCountTimes++;
                 } else {
                     sameCountTimes = 0;
-                    lastCount = productosExtraidos.size();
-                    if(lastCount % 100 == 0) System.out.println("Acumulado: " + lastCount + " productos...");
+                    lastCount = extractedProducts.size();
+                    if(lastCount % 100 == 0) System.out.println("Accumulated: " + lastCount + " products...");
                 }
             }
         } catch (Exception e) {
-            System.out.println("Aviso: El scroll se detuvo, pero se conservan los datos extraídos.");
+            System.out.println("Notice: Scrolling stopped, but extracted data is preserved.");
         } finally {
             driver.quit();
         }
-        return new ArrayList<>(productosExtraidos.values());
+        return new ArrayList<>(extractedProducts.values());
     }
 
-    private double parsearPrecio(String t) {
-        if (t == null || t.isEmpty()) return 0;
-        return Double.parseDouble(t.replace("€", "").replace(",", ".").replaceAll("[^0-9.]", ""));
+    private double parsePrice(String text) {
+        if (text == null || text.isEmpty()) return 0;
+        return Double.parseDouble(text.replace("€", "").replace(",", ".").replaceAll("[^0-9.]", ""));
     }
 
-    private double parsearCantidad(String t) {
-        if (t == null) return 1;
-        String n = t.replaceAll("[^0-9]", "");
+    private double parseQuantity(String text) {
+        if (text == null) return 1;
+        String n = text.replaceAll("[^0-9]", "");
         return n.isEmpty() ? 1 : Double.parseDouble(n);
     }
 
-    private String parsearUnidad(String t) {
-        return t == null ? "" : t.replaceAll("[0-9 ]", "");
+    private String parseUnit(String text) {
+        return text == null ? "" : text.replaceAll("[0-9 ]", "");
     }
 
-    private String extraerMarca(String nombre) {
-        return nombre.isEmpty() ? "Desconocida" : nombre.split(" ")[0];
+    private String extractBrand(String name) {
+        return name.isEmpty() ? "Unknown" : name.split(" ")[0];
     }
 }

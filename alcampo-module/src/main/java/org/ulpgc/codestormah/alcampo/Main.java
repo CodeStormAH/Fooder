@@ -26,9 +26,9 @@ public class Main {
 
         AlcampoFeeder feeder = new AlcampoScraperFeeder(urlObjetivo);
         // Le pasamos el objeto File, tal y como pide el profesor
-        AlcampoSerializer serializer = new DatabaseAlcampoSerializer(dbFile);
+        AlcampoStore store = new DatabaseAlcampoStore(dbFile);
 
-        AlcampoController controller = new AlcampoController(feeder, serializer);
+        AlcampoController controller = new AlcampoController(feeder, store);
         controller.execute();
     }
 }
