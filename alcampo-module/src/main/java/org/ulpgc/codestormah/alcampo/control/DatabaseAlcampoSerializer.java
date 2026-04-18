@@ -10,16 +10,12 @@ public class DatabaseAlcampoSerializer implements AlcampoSerializer {
 
     private final String jdbcUrl;
 
-    // Aquí está el constructor exacto que pidió tu profesor
     public DatabaseAlcampoSerializer(File dbFile) {
-        // Obtenemos la ruta absoluta del archivo y le añadimos el prefijo de SQLite.
-        // Esto asegura que el archivo se cree exactamente donde debe.
         this.jdbcUrl = "jdbc:sqlite:" + dbFile.getAbsolutePath();
     }
 
     @Override
     public void serialize(List<Product> products) {
-        // Usamos la URL que hemos construido en el constructor
         try (Connection conn = DriverManager.getConnection(this.jdbcUrl)) {
             crearTablas(conn);
             insertarProductos(products, conn);
