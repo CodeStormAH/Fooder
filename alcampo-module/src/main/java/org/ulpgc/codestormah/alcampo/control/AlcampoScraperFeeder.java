@@ -16,6 +16,7 @@ import java.util.UUID;
 
 public class AlcampoScraperFeeder implements AlcampoFeeder {
     private final String url;
+    private static final int TESTING_LIMIT = 200;
 
     public AlcampoScraperFeeder(String url) {
         this.url = url;
@@ -24,12 +25,9 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
     @Override
     public List<Product> fetchProducts() {
         ChromeOptions options = new ChromeOptions();
-
-        // --- SPEED OPTIMIZATIONS ---
         options.addArguments("--headless=new");
         options.addArguments("--start-maximized");
-        options.addArguments("--blink-settings=imagesEnabled=false"); // DISABLE IMAGES
-        options.addArguments("--disable-blink-features=AutomationControlled"); // Less detectable
+        options.addArguments("--disable-blink-features=AutomationControlled");
 
         WebDriver driver = new ChromeDriver(options);
         Map<String, Product> extractedProducts = new HashMap<>();
@@ -38,7 +36,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             driver.get(this.url);
             Thread.sleep(4000);
 
-            // Accept cookies quickly
             try {
                 driver.findElement(By.id("onetrust-accept-btn-handler")).click();
             } catch (Exception e) {}
@@ -47,78 +44,133 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             int lastCount = 0;
             int sameCountTimes = 0;
 
-            System.out.println("Starting optimized extraction (no images)...");
+            System.out.println("Extrayendo datos reales de Alcampo...");
 
-            while (sameCountTimes < 5) {
+            while (sameCountTimes < 5 && extractedProducts.size() < TESTING_LIMIT) {
+                // Selector del contenedor principal de cada producto
                 List<WebElement> webElements = driver.findElements(
                         By.cssSelector("[data-retailer-anchor='product-list'] div[data-test^='fop-wrapper']")
                 );
 
                 for (WebElement element : webElements) {
+                    if (extractedProducts.size() >= TESTING_LIMIT) break;
+
                     try {
                         String name = element.findElement(By.cssSelector("[data-test='fop-title']")).getText();
+
                         if (!extractedProducts.containsKey(name) && !name.isEmpty()) {
 
+                            // 1. PRECIO TOTAL (Ej: 1,80 €)
                             String priceText = element.findElement(By.cssSelector("[data-test='fop-price']")).getText();
-                            String sizeText = element.findElement(By.cssSelector("[data-test='fop-size']")).getText();
+                            double priceValue = parseNumericValue(priceText);
 
-                            double priceValue = parsePrice(priceText);
-                            double quantityValue = parseQuantity(sizeText);
-                            String unitValue = parseUnit(sizeText);
-                            String brandValue = extractBrand(name);
-                            String id = UUID.randomUUID().toString();
+                            // 2. PRECIO POR UNIDAD (Ej: 0,20 € por litro)
+                            double unitPriceValue = 0.0;
+                            try {
+                                String uPriceText = element.findElement(By.cssSelector("[data-test='fop-price-per-unit']")).getText();
+                                unitPriceValue = parseNumericValue(uPriceText);
+                            } catch (Exception e) {}
+
+                            // 3. CANTIDAD REAL (Evitamos los IDs internos de 8 dígitos)
+                            String sizeText = "";
+                            try {
+                                // Forzamos la lectura del texto dentro del span para evitar atributos ocultos
+                                sizeText = element.findElement(By.cssSelector("[data-test='fop-size'] span")).getText();
+                            } catch (Exception e) {
+                                sizeText = element.findElement(By.cssSelector("[data-test='fop-size']")).getText();
+                            }
+                            double quantityValue = parseQuantityValue(sizeText);
+                            String unitValue = parseUnitLabel(sizeText);
+
+                            // 4. MARCA: Filtramos para que no se cuelen letras de la descripción
+                            String brandValue = extractCleanBrand(name);
+
+                            // 5. OFERTA: Detección visual del banner
+                            boolean isOnSale = !element.findElements(By.cssSelector(".promotion-container")).isEmpty();
 
                             extractedProducts.put(name, new Product(
-                                    id,
+                                    UUID.randomUUID().toString(),
                                     name,
                                     name.toLowerCase(),
                                     brandValue,
-                                    "general_category",
+                                    "Bebidas", // Mantenemos la categoría fija
                                     priceValue,
+                                    unitPriceValue,
                                     unitValue,
                                     quantityValue,
-                                    false
+                                    isOnSale
                             ));
                         }
                     } catch (Exception e) {}
                 }
 
-                // Smooth scroll and wait
+                if (extractedProducts.size() >= TESTING_LIMIT) break;
+
                 js.executeScript("window.scrollBy(0, 1000);");
-                Thread.sleep(800);
+                Thread.sleep(1500);
 
                 if (extractedProducts.size() == lastCount) {
                     sameCountTimes++;
                 } else {
                     sameCountTimes = 0;
                     lastCount = extractedProducts.size();
-                    if(lastCount % 100 == 0) System.out.println("Accumulated: " + lastCount + " products...");
+                    System.out.println("Capturados: " + lastCount + "/" + TESTING_LIMIT);
                 }
             }
         } catch (Exception e) {
-            System.out.println("Notice: Scrolling stopped, but extracted data is preserved.");
+            System.err.println("Error en el scraper: " + e.getMessage());
         } finally {
             driver.quit();
         }
         return new ArrayList<>(extractedProducts.values());
     }
 
-    private double parsePrice(String text) {
+    // --- MÉTODOS DE LIMPIEZA DE DATOS ---
+
+    private double parseNumericValue(String text) {
         if (text == null || text.isEmpty()) return 0;
-        return Double.parseDouble(text.replace("€", "").replace(",", ".").replaceAll("[^0-9.]", ""));
+        // Limpiamos todo lo que no sea número o coma decimal
+        String cleaned = text.replaceAll("[^0-9,]", "").replace(",", ".");
+        try {
+            return Double.parseDouble(cleaned);
+        } catch (Exception e) { return 0; }
     }
 
-    private double parseQuantity(String text) {
-        if (text == null) return 1;
-        String n = text.replaceAll("[^0-9]", "");
-        return n.isEmpty() ? 1 : Double.parseDouble(n);
+    private double parseQuantityValue(String text) {
+        if (text == null || text.isEmpty()) return 1.0;
+        // Extraemos el número del texto "9000ml" o "1,5 L"
+        String cleaned = text.replaceAll("[^0-9,.]", "").replace(",", ".");
+        try {
+            double val = Double.parseDouble(cleaned);
+            // Normalización: si son mililitros altos, pasamos a litros
+            if (text.toLowerCase().contains("ml") && val >= 100) return val / 1000.0;
+            return val;
+        } catch (Exception e) { return 1.0; }
     }
 
-    private String parseUnit(String text) {
-        return text == null ? "" : text.replaceAll("[0-9 ]", "");
+    private String parseUnitLabel(String text) {
+        if (text == null) return "ud";
+        String lower = text.toLowerCase();
+        if (lower.contains("ml") || lower.contains(" l") || lower.contains("litro")) return "L";
+        if (lower.contains("kg") || lower.contains("kilo") || lower.contains(" g")) return "kg";
+        return "ud";
     }
 
-    private String extractBrand(String name) {
-        return name.isEmpty() ? "Unknown" : name.split(" ")[0];
+    private String extractCleanBrand(String name) {
+        if (name == null || name.isEmpty()) return "GENÉRICO";
+        String[] words = name.split(" ");
+        StringBuilder brand = new StringBuilder();
+
+        for (String word : words) {
+            // Regla: La palabra debe ser TODAS MAYÚSCULAS y tener más de 1 letra
+            // Paramos en cuanto aparezca una palabra con minúsculas (la descripción)
+            if (word.equals(word.toUpperCase()) && word.length() > 1 && word.matches("[A-ZÁÉÍÓÚÑ0-9]+")) {
+                if (brand.length() > 0) brand.append(" ");
+                brand.append(word);
+            } else {
+                break;
+            }
+        }
+        return brand.length() > 0 ? brand.toString() : "GENÉRICO";
     }
 }
