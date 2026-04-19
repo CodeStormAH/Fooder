@@ -36,6 +36,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             driver.get(this.url);
             Thread.sleep(4000);
 
+            // Aceptar cookies si aparecen
             try {
                 driver.findElement(By.id("onetrust-accept-btn-handler")).click();
             } catch (Exception e) {}
@@ -44,10 +45,10 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             int lastCount = 0;
             int sameCountTimes = 0;
 
-            System.out.println("Extrayendo datos reales de Alcampo...");
+            System.out.println("Iniciando extracción en Alcampo (Límite: " + TESTING_LIMIT + ")...");
 
             while (sameCountTimes < 5 && extractedProducts.size() < TESTING_LIMIT) {
-                // Selector del contenedor principal de cada producto
+                // Seleccionamos el contenedor de cada producto
                 List<WebElement> webElements = driver.findElements(
                         By.cssSelector("[data-retailer-anchor='product-list'] div[data-test^='fop-wrapper']")
                 );
@@ -56,44 +57,46 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                     if (extractedProducts.size() >= TESTING_LIMIT) break;
 
                     try {
-                        String name = element.findElement(By.cssSelector("[data-test='fop-title']")).getText();
+                        String fullName = element.findElement(By.cssSelector("[data-test='fop-title']")).getText();
 
-                        if (!extractedProducts.containsKey(name) && !name.isEmpty()) {
+                        if (!extractedProducts.containsKey(fullName) && !fullName.isEmpty()) {
 
-                            // 1. PRECIO TOTAL (Ej: 1,80 €)
+                            // 1. PRECIO TOTAL Y UNITARIO
                             String priceText = element.findElement(By.cssSelector("[data-test='fop-price']")).getText();
                             double priceValue = parseNumericValue(priceText);
 
-                            // 2. PRECIO POR UNIDAD (Ej: 0,20 € por litro)
                             double unitPriceValue = 0.0;
                             try {
                                 String uPriceText = element.findElement(By.cssSelector("[data-test='fop-price-per-unit']")).getText();
                                 unitPriceValue = parseNumericValue(uPriceText);
                             } catch (Exception e) {}
 
-                            // 3. CANTIDAD REAL (Evitamos los IDs internos de 8 dígitos)
+                            // 2. CANTIDAD Y UNIDAD (Corregido para detectar gramos 'g')
                             String sizeText = "";
                             try {
-                                // Forzamos la lectura del texto dentro del span para evitar atributos ocultos
+                                // Leemos el texto visible para evitar IDs internos
                                 sizeText = element.findElement(By.cssSelector("[data-test='fop-size'] span")).getText();
                             } catch (Exception e) {
                                 sizeText = element.findElement(By.cssSelector("[data-test='fop-size']")).getText();
                             }
+
                             double quantityValue = parseQuantityValue(sizeText);
                             String unitValue = parseUnitLabel(sizeText);
 
-                            // 4. MARCA: Filtramos para que no se cuelen letras de la descripción
-                            String brandValue = extractCleanBrand(name);
+                            // 3. MARCA (Solo palabras en MAYÚSCULAS al inicio)
+                            String brandValue = extractCleanBrand(fullName);
 
-                            // 5. OFERTA: Detección visual del banner
+                            // 4. OFERTA
                             boolean isOnSale = !element.findElements(By.cssSelector(".promotion-container")).isEmpty();
 
-                            extractedProducts.put(name, new Product(
+                            String normalizedName = cleanNormalizedName(fullName, brandValue);
+
+                            extractedProducts.put(fullName, new Product(
                                     UUID.randomUUID().toString(),
-                                    name,
-                                    name.toLowerCase(),
+                                    fullName,
+                                    normalizedName,
                                     brandValue,
-                                    "Bebidas", // Mantenemos la categoría fija
+                                    "general_category", // Revertido a categoría fija como solicitaste
                                     priceValue,
                                     unitPriceValue,
                                     unitValue,
@@ -114,22 +117,22 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                 } else {
                     sameCountTimes = 0;
                     lastCount = extractedProducts.size();
-                    System.out.println("Capturados: " + lastCount + "/" + TESTING_LIMIT);
+                    System.out.println("Progreso: " + lastCount + "/" + TESTING_LIMIT);
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error en el scraper: " + e.getMessage());
+            System.err.println("Error durante la ejecución: " + e.getMessage());
         } finally {
             driver.quit();
         }
         return new ArrayList<>(extractedProducts.values());
     }
 
-    // --- MÉTODOS DE LIMPIEZA DE DATOS ---
+    // --- MÉTODOS DE SOPORTE PARA LIMPIEZA DE DATOS ---
 
     private double parseNumericValue(String text) {
         if (text == null || text.isEmpty()) return 0;
-        // Limpiamos todo lo que no sea número o coma decimal
+        // Convierte "0,20 €" en "0.20" para poder parsearlo a Double
         String cleaned = text.replaceAll("[^0-9,]", "").replace(",", ".");
         try {
             return Double.parseDouble(cleaned);
@@ -138,12 +141,11 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
 
     private double parseQuantityValue(String text) {
         if (text == null || text.isEmpty()) return 1.0;
-        // Extraemos el número del texto "9000ml" o "1,5 L"
         String cleaned = text.replaceAll("[^0-9,.]", "").replace(",", ".");
         try {
             double val = Double.parseDouble(cleaned);
-            // Normalización: si son mililitros altos, pasamos a litros
-            if (text.toLowerCase().contains("ml") && val >= 100) return val / 1000.0;
+            // Si detectamos mililitros, dividimos por 1000 para que coincida con la unidad "L"
+            if (text.toLowerCase().contains("ml")) return val / 1000.0;
             return val;
         } catch (Exception e) { return 1.0; }
     }
@@ -151,8 +153,14 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
     private String parseUnitLabel(String text) {
         if (text == null) return "ud";
         String lower = text.toLowerCase();
-        if (lower.contains("ml") || lower.contains(" l") || lower.contains("litro")) return "L";
-        if (lower.contains("kg") || lower.contains("kilo") || lower.contains(" g")) return "kg";
+
+        // Detección de Líquidos
+        if (lower.contains("ml") || lower.contains("litro") || lower.contains(" l")) return "L";
+
+        // Detección de Peso (Gramos y Kilos)
+        if (lower.contains("kg") || lower.contains("kilo")) return "kg";
+        if (lower.matches(".*\\d\\s?g($|\\s).*") || lower.contains("gramo") || lower.endsWith("g")) return "g";
+
         return "ud";
     }
 
@@ -162,8 +170,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         StringBuilder brand = new StringBuilder();
 
         for (String word : words) {
-            // Regla: La palabra debe ser TODAS MAYÚSCULAS y tener más de 1 letra
-            // Paramos en cuanto aparezca una palabra con minúsculas (la descripción)
+            // Se queda con las palabras en mayúsculas (ej: FONT VELLA) y para al llegar a la descripción
             if (word.equals(word.toUpperCase()) && word.length() > 1 && word.matches("[A-ZÁÉÍÓÚÑ0-9]+")) {
                 if (brand.length() > 0) brand.append(" ");
                 brand.append(word);
@@ -172,5 +179,34 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             }
         }
         return brand.length() > 0 ? brand.toString() : "GENÉRICO";
+    }
+
+    private String cleanNormalizedName(String fullName, String brand) {
+        // A. Quitamos la marca si existe al principio
+        String cleaned = fullName.replace(brand, "").trim();
+
+        // B. Pasamos a minúsculas
+        cleaned = cleaned.toLowerCase();
+
+        // C. Quitamos patrones de cantidades (pack de X, botella de, x 1,5l, etc.)
+        cleaned = cleaned.replaceAll("(?i)pack de \\d+", "");
+        cleaned = cleaned.replaceAll("(?i)botella de", "");
+        cleaned = cleaned.replaceAll("(?i)uds\\.?", "");
+
+        // D. Quitamos números acompañados de unidades (1,5l, 500g, 9000ml)
+        cleaned = cleaned.replaceAll("\\d+[\\.,]?\\d*\\s?(ml|l|g|kg|cl)", "");
+
+        // E. Quitamos multiplicadores tipo "6 x 1,5" o "3 x 33"
+        cleaned = cleaned.replaceAll("\\d+\\s?x\\s?\\d+[\\.,]?\\d*", "");
+
+        // F. Quitamos números sueltos y caracteres especiales
+        cleaned = cleaned.replaceAll("[0-9]+", "");
+        cleaned = cleaned.replaceAll("[\\.,\\(\\)\\-x]", "");
+
+        // G. Quitamos palabras que hayan quedado en mayúsculas (por si eran parte de la marca no detectada)
+        // En este punto todo es minúscula por el step B, así que limpiamos espacios extra
+        cleaned = cleaned.replaceAll("\\s+", " ").trim();
+
+        return cleaned.isEmpty() ? fullName.toLowerCase() : cleaned;
     }
 }

@@ -9,15 +9,11 @@ public class Main {
 
         if (args.length < 2) {
             System.err.println("❌ Error: Faltan parámetros de configuración.");
-            // Fíjate que el ejemplo ahora NO lleva 'jdbc:sqlite:'
-            System.out.println("Uso correcto: java Main <url_alcampo> <nombre_archivo_db>");
-            System.out.println("Ejemplo: java Main \"https://www.compraonline.alcampo.es/categories?source=navigation\" \"alcampo.db\"");
             return;
         }
 
         String urlObjetivo = args[0];
 
-        // Transformamos el texto en un objeto File
         File dbFile = new File(args[1]);
 
         System.out.println("Iniciando programa con los siguientes parámetros:");
@@ -25,7 +21,6 @@ public class Main {
         System.out.println("Archivo BBDD: " + dbFile.getAbsolutePath());
 
         AlcampoFeeder feeder = new AlcampoScraperFeeder(urlObjetivo);
-        // Le pasamos el objeto File, tal y como pide el profesor
         AlcampoStore store = new DatabaseAlcampoStore(dbFile);
 
         AlcampoController controller = new AlcampoController(feeder, store);
