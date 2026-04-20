@@ -14,10 +14,12 @@ public class MercadonaFeeder implements ProductFeeder {
     private static final int TIMEOUT_MS = 15000;
     private final String categoriesPath;
     private final String apiUrl;
+    private final Set<String> allowedCategories;
 
-    public MercadonaFeeder(String apiUrl, String categoriesPath) {
+    public MercadonaFeeder(String apiUrl, String categoriesPath, Set<String> allowedCategories) {
         this.apiUrl = apiUrl;
         this.categoriesPath = categoriesPath;
+        this.allowedCategories = allowedCategories;
     }
 
     @Override
@@ -74,6 +76,10 @@ public class MercadonaFeeder implements ProductFeeder {
         JsonObject productJson = productElement.getAsJsonObject();
 
         if (!isValidProduct(productJson)) return;
+
+        if (!allowedCategories.contains(categoryName.toLowerCase())) {
+            return;
+        }
 
         accumulator.add(mapToProduct(productJson, categoryName));
     }
