@@ -16,7 +16,7 @@ public class DatabaseAlcampoStore implements AlcampoStore {
     @Override
     public void store(List<Product> products) {
         try (Connection conn = DriverManager.getConnection(this.jdbcUrl)) {
-            conn.setAutoCommit(false); // Por seguridad y velocidad
+            conn.setAutoCommit(false);
             createSchema(conn);
             saveProducts(products, conn);
             savePrices(products, conn);
@@ -29,12 +29,10 @@ public class DatabaseAlcampoStore implements AlcampoStore {
 
     private void createSchema(Connection conn) throws SQLException {
         try (Statement st = conn.createStatement()) {
-            // Tabla de información fija del producto
             st.execute("CREATE TABLE IF NOT EXISTS products (" +
                     "id TEXT PRIMARY KEY, name TEXT, normalized_name TEXT, " +
                     "brand TEXT, category TEXT, quantity REAL, unit TEXT)");
 
-            // Tabla de historial de precios
             st.execute("CREATE TABLE IF NOT EXISTS prices (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, " +
                     "price REAL, unit_price REAL, is_on_sale BOOLEAN, date TEXT DEFAULT (datetime('now')), " +
@@ -43,7 +41,6 @@ public class DatabaseAlcampoStore implements AlcampoStore {
     }
 
     private void saveProducts(List<Product> products, Connection conn) throws SQLException {
-        // Usamos INSERT OR REPLACE para que si mejora el nombre o la marca, se actualice la ficha
         String sql = "INSERT OR REPLACE INTO products (id, name, normalized_name, brand, category, quantity, unit) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (Product p : products) {
@@ -61,7 +58,6 @@ public class DatabaseAlcampoStore implements AlcampoStore {
     }
 
     private void savePrices(List<Product> products, Connection conn) throws SQLException {
-        // Guardamos el precio total (Ej: 1.80€) y el unitario (Ej: 0.20€/l)
         String sql = "INSERT INTO prices (product_id, price, unit_price, is_on_sale) VALUES (?, ?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (Product p : products) {

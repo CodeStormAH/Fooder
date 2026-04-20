@@ -57,11 +57,9 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             for (String currentCategory : categories) {
                 if (currentCategory.trim().isEmpty()) continue;
 
-                // CLAVE: Volvemos a la Home en cada categoría para resetear el buscador
                 driver.get(this.baseUrl);
                 wait(3000);
 
-                // Aceptar cookies solo si es la primera vez o si aparecen tras el reset
                 try {
                     WebElement cookieBtn = driver.findElement(By.id("onetrust-accept-btn-handler"));
                     if(cookieBtn.isDisplayed()) cookieBtn.click();
@@ -70,7 +68,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                 System.out.println("🔎 Iniciando búsqueda de: " + currentCategory);
 
                 try {
-                    // Esperamos a que la barra sea visible
                     WebElement searchBar = wait.until(ExpectedConditions.visibilityOfElementLocated(
                             By.cssSelector("input[placeholder*='Buscar'], input[type='search']")
                     ));
@@ -79,7 +76,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                     searchBar.sendKeys(currentCategory);
                     searchBar.sendKeys(Keys.ENTER);
 
-                    // Esperamos a que la URL cambie o que aparezcan resultados
                     Thread.sleep(4000);
 
                     int categoryCount = 0;
@@ -98,7 +94,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                             try {
                                 String fullName = element.findElement(By.cssSelector("[data-test='fop-title']")).getText();
 
-                                // Solo añadimos si no existe o si queremos permitir que un producto cambie de categoría
                                 if (!fullName.isEmpty() && !extractedProducts.containsKey(fullName)) {
 
                                     double priceValue = parseNumericValue(element.findElement(By.cssSelector("[data-test='fop-price']")).getText());
@@ -117,7 +112,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                                             fullName,
                                             normalizedName,
                                             brandValue,
-                                            currentCategory, // Aquí se asigna la categoría del bucle actual
+                                            currentCategory,
                                             priceValue,
                                             unitPriceValue,
                                             parseUnitLabel(sizeText),
@@ -146,8 +141,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         }
         return new ArrayList<>(extractedProducts.values());
     }
-
-    // ... (Mantén tus métodos privados loadCategoriesFromFile, cleanNormalizedName, etc. iguales) ...
 
     private List<String> loadCategoriesFromFile() {
         try {

@@ -1,13 +1,13 @@
 package org.ulpgc.codestormah.alcampo.model;
 
 public class Product {
-    private final String id; // Ahora guardará el ID real de Alcampo
+    private final String id;
     private final String name;
     private final String normalizedName;
     private final String brand;
     private final String category;
-    private final double price;      // NUEVO: Precio final a pagar (ej. 1.80)
-    private final double unitPrice;  // Precio por unidad de medida (ej. 0.20)
+    private final double price;
+    private final double unitPrice;
     private final double quantity;
     private final String unit;
     private final boolean isOnSale;
@@ -31,7 +31,6 @@ public class Product {
         return name + " | " + brand + " | Total: " + price + "€ (" + unitPrice + "€/" + unit + ") | On Sale: " + isOnSale;
     }
 
-    // Getters
     public String getId() { return id; }
     public String getName() { return name; }
     public String getNormalizedName() { return normalizedName; }
