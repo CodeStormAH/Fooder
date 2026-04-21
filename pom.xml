@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>alcampo-module</module>
+        <module>alcampoFeeder</module>
         <module>mercadonaFeeder</module>
     </modules>
 
