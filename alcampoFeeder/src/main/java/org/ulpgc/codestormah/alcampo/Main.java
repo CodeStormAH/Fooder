@@ -14,8 +14,6 @@ public class Main {
         String targetUrl = args[0];
         String categoriesFilePath = args[1];
         String brokerUrl = args[2];
-
-        // El nombre del topic lo podemos dejar fijo como constante, o pasarlo como args[3] si lo prefieres.
         String topicName = args[3];
 
         startApplication(targetUrl, categoriesFilePath, brokerUrl, topicName);
