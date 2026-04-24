@@ -12,6 +12,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -63,7 +64,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
     private void processAllCategories(WebDriver driver, List<String> categories, Map<String, Product> products) {
         for (String category : categories) {
             if (category.isBlank()) continue;
-            System.out.println("🔎 Searching for: " + category);
+            System.out.println("Searching for: " + category);
             scrapeCategory(driver, category, products);
         }
     }
@@ -87,7 +88,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             searchBar.sendKeys(Keys.ENTER);
             pause(SEARCH_WAIT_MS);
         } catch (Exception e) {
-            System.err.println("⚠️ Search error for '" + category + "': " + e.getMessage());
+            System.err.println("Search error for '" + category + "': " + e.getMessage());
         }
     }
 
@@ -110,7 +111,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                 lastCount = currentCategoryCount;
             }
         }
-        System.out.println("   ✅ Finished " + category + " (" + currentCategoryCount + " products)");
+        System.out.println("   Finished " + category + " (" + currentCategoryCount + " products)");
     }
 
     private int scanPageForProducts(WebDriver driver, String category, Map<String, Product> products, int currentCount) {
@@ -147,9 +148,10 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         String brand = extractBrand(name);
         String normalizedName = cleanName(name, brand);
         boolean isSale = !el.findElements(By.cssSelector(".promotion-container")).isEmpty();
+        String deterministicId = UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8)).toString();
 
         return new Product(
-                UUID.randomUUID().toString(), name, normalizedName,
+                deterministicId, name, normalizedName,
                 brand, category, price, unitPrice, parseUnit(sizeText),
                 parseQuantity(sizeText), isSale
         );
@@ -226,7 +228,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         try {
             return Files.readAllLines(Paths.get(this.categoriesPath));
         } catch (IOException e) {
-            System.err.println("❌ Critical error reading categories file: " + e.getMessage());
+            System.err.println("Critical error reading categories file: " + e.getMessage());
             return new ArrayList<>();
         }
     }

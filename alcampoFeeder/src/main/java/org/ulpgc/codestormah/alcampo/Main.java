@@ -28,7 +28,7 @@ public class Main {
     }
 
     private static void printUsageError() {
-        System.err.println("❌ Error: Missing configuration parameters.");
+        System.err.println("Error: Missing configuration parameters.");
         System.err.println("Usage: <URL> <Database_File> <Categories_File>");
     }
 }
