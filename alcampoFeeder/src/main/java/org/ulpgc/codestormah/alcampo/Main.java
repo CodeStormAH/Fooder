@@ -2,6 +2,7 @@ package org.ulpgc.codestormah.alcampo;
 
 import org.ulpgc.codestormah.alcampo.control.*;
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
     public static void main(String[] args) {
@@ -24,7 +25,7 @@ public class Main {
         AlcampoStore store = new DatabaseAlcampoStore(dbFile);
         AlcampoController controller = new AlcampoController(feeder, store);
 
-        controller.execute();
+        controller.startScheduled(0, 1, TimeUnit.DAYS);
     }
 
     private static void printUsageError() {
