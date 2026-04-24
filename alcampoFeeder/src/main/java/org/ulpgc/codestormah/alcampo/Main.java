@@ -6,23 +6,29 @@ import java.util.concurrent.TimeUnit;
 
 public class Main {
     public static void main(String[] args) {
-        if (args.length < 3) {
+        if (args.length < 4) {
             printUsageError();
             return;
         }
 
         String targetUrl = args[0];
-        File databaseFile = new File(args[1]);
-        String categoriesFilePath = args[2];
+        String categoriesFilePath = args[1];
+        String brokerUrl = args[2];
 
-        startApplication(targetUrl, databaseFile, categoriesFilePath);
+        // El nombre del topic lo podemos dejar fijo como constante, o pasarlo como args[3] si lo prefieres.
+        String topicName = args[3];
+
+        startApplication(targetUrl, categoriesFilePath, brokerUrl, topicName);
     }
 
-    private static void startApplication(String url, File dbFile, String path) {
+    private static void startApplication(String url, String categoriesPath, String brokerUrl, String topic) {
         System.out.println("Starting program...");
 
-        AlcampoFeeder feeder = new AlcampoScraperFeeder(url, path);
-        AlcampoStore store = new DatabaseAlcampoStore(dbFile);
+        System.out.println("Starting Publisher (Scraper -> ActiveMQ)...");
+        System.out.println("Broker: " + brokerUrl + " | Topic: " + topic);
+
+        AlcampoFeeder feeder = new AlcampoScraperFeeder(url, categoriesPath);
+        AlcampoStore store = new ActiveMQAlcampoStore(brokerUrl, topic);
         AlcampoController controller = new AlcampoController(feeder, store);
 
         controller.startScheduled(0, 1, TimeUnit.DAYS);
