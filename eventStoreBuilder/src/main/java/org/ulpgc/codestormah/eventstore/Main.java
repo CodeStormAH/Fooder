@@ -10,7 +10,7 @@ public class Main {
         }
 
         String brokerUrl = args[0]; // tcp://localhost:61616
-        String topic = args[1];     // prediction.Product
+        String topic = args[1];     // comparison.Product
         String source = args[2];    // Tú: "alcampo" | Compañero: "mercadona"
         String root = args[3];      // "datalake"
 
