@@ -1,15 +1,31 @@
 package org.ulpgc.codestormah.mercadona.controller;
 
-import org.ulpgc.codestormah.mercadona.model.Product;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.List;
+public record Controller(ProductFeeder feeder) {
+    private static final ScheduledExecutorService scheduler =
+            Executors.newSingleThreadScheduledExecutor();
 
-public record Controller(ProductFeeder feeder, ProductStore serializer) {
-    public void execute(int maxProducts) throws IOException, SQLException {
-        List<Product> products = feeder.getProducts(maxProducts);
-        System.out.println("Products fetched: " + products.size());
-        serializer.save(products);
+    public void execute(int maxProducts) throws Exception {
+        feeder.getProducts(maxProducts);
+    }
+
+    public void startScheduler(int maxProducts) {
+        scheduler.scheduleAtFixedRate(
+                () -> runSafely(maxProducts),
+                0,
+                1,
+                TimeUnit.DAYS
+        );
+    }
+
+    private void runSafely(int maxProducts) {
+        try {
+            execute(maxProducts);
+        } catch (Exception e) {
+            throw new RuntimeException("Scheduled execution failed", e);
+        }
     }
 }
