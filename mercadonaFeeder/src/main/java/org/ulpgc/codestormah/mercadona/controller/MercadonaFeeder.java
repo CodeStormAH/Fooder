@@ -1,216 +1,160 @@
 package org.ulpgc.codestormah.mercadona.controller;
 
-import org.ulpgc.codestormah.mercadona.model.Product;
 import com.google.gson.*;
-import org.jsoup.Connection;
 import org.jsoup.Jsoup;
+import org.ulpgc.codestormah.mercadona.model.Product;
 import org.ulpgc.codestormah.mercadona.model.ProductTextProcessor;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Set;
 
 public class MercadonaFeeder implements ProductFeeder {
-    private static final int MAX_ATTEMPTS = 3;
-    private static final int TIMEOUT_MS = 15000;
-    private final String categoriesPath;
-    private final String apiUrl;
-    private final Set<String> allowedCategories;
 
-    public MercadonaFeeder(String apiUrl, String categoriesPath, Set<String> allowedCategories) {
+    private static final int TIMEOUT_MS = 15000;
+    private static final String EVENT_TOPIC = "Product";
+
+    private final String apiUrl;
+    private final String categoriesPath;
+    private final Set<String> allowedCategories;
+    private final EventPublisher publisher;
+
+    public MercadonaFeeder(
+            String apiUrl,
+            String categoriesPath,
+            Set<String> allowedCategories,
+            EventPublisher publisher
+    ) {
         this.apiUrl = apiUrl;
         this.categoriesPath = categoriesPath;
         this.allowedCategories = allowedCategories;
+        this.publisher = publisher;
     }
 
     @Override
-    public List<Product> getProducts(int maxProducts) throws IOException {
-        return loadProducts(maxProducts);
-    }
-
-    private List<Product> loadProducts(int maxProducts) throws IOException {
-        ProductAccumulator accumulator = new ProductAccumulator(maxProducts);
-
-        for (JsonElement categoryElement : fetchCategories()) {
-            processCategory(categoryElement, accumulator);
+    public void run(int maxProducts) throws IOException {
+        for (JsonElement rootCategory : fetchRootCategories()) {
+            processRootCategory(rootCategory);
         }
-
-        List<Product> products = accumulator.getAllProducts();
-
-        return maxProducts == -1
-                ? products
-                : products.subList(0, Math.min(maxProducts, products.size()));
     }
 
-    private void processCategory(JsonElement categoryElement, ProductAccumulator accumulator) throws IOException {
-        JsonArray subcategories = extractSubcategories(categoryElement);
+    private void processRootCategory(JsonElement root) throws IOException {
+        JsonArray subcategories = extractCategories(root);
         if (subcategories == null) return;
 
-        for (JsonElement subcategoryElement : subcategories) {
-            processSubcategory(subcategoryElement, accumulator);
+        for (JsonElement sub : subcategories) {
+            processSubcategory(sub);
         }
     }
 
-    private void processSubcategory(JsonElement subcategoryElement, ProductAccumulator accumulator) throws IOException {
-        JsonObject subcategoryObject = subcategoryElement.getAsJsonObject();
+    private void processSubcategory(JsonElement subcategoryElement) throws IOException {
+        JsonObject subcategory = subcategoryElement.getAsJsonObject();
+        String categoryName = extractName(subcategory);
 
-        JsonArray nestedCategories  = fetchNestedCategories(subcategoryObject);
-        if (nestedCategories  == null) return;
+        if (!isAllowed(categoryName)) return;
 
-        String categoryName = subcategoryObject.get("name").getAsString();
+        JsonArray nestedCategories = fetchNestedCategories(subcategory);
+        if (nestedCategories == null) return;
 
-        for (JsonElement nestedCategory : nestedCategories) {
-            processProductList(nestedCategory, categoryName, accumulator);
+        for (JsonElement nested : nestedCategories) {
+            processProductList(nested, categoryName);
         }
     }
 
-    private void processProductList(JsonElement categoryElement, String categoryName, ProductAccumulator accumulator) {
-        JsonArray productsArray = extractProducts(categoryElement);
-        if (productsArray == null) return;
+    private void processProductList(JsonElement categoryElement, String categoryName) {
+        JsonArray products = extractProducts(categoryElement);
+        if (products == null) return;
 
-        for (JsonElement productElement : productsArray) {
-            processProduct(productElement, categoryName, accumulator);
+        for (JsonElement productElement : products) {
+            processProduct(productElement, categoryName);
         }
     }
 
-    private void processProduct(JsonElement productElement, String categoryName, ProductAccumulator accumulator) {
-        JsonObject productJson = productElement.getAsJsonObject();
+    private void processProduct(JsonElement productElement, String categoryName) {
+        JsonObject json = productElement.getAsJsonObject();
 
-        if (!isValidProduct(productJson)) return;
+        if (!isValidProduct(json)) return;
 
-        if (!allowedCategories.contains(categoryName.toLowerCase())) {
-            return;
-        }
-
-        accumulator.add(mapToProduct(productJson, categoryName));
+        Product product = toProduct(json, categoryName);
+        publish(product);
     }
 
-    private Product mapToProduct(JsonObject productJson, String categoryName) {
-        JsonObject priceJson = extractPriceInfo(productJson);
+    private void publish(Product product) {
+        publisher.publish(EVENT_TOPIC, product);
+    }
+
+    private Product toProduct(JsonObject json, String category) {
+        JsonObject price = json.getAsJsonObject("price_instructions");
+        String name = json.get("display_name").getAsString();
 
         return new Product(
-                extractProductId(productJson),
-                extractProductName(productJson),
-                normalizeProductName(productJson),
-                extractBrand(productJson),
-                categoryName,
-                extractUnitPrice(priceJson),
-                extractUnit(priceJson),
-                extractAmount(priceJson),
-                isOnOffer(priceJson)
+                json.get("id").getAsString(),
+                name,
+                ProductTextProcessor.normalizeName(name),
+                ProductTextProcessor.extractBrand(name),
+                category,
+                extractUnitPrice(price),
+                extractUnitFormat(price),
+                extractUnitSize(price),
+                isDiscount(price)
         );
     }
 
-    private String extractBrand(JsonObject productJson) {
-        return ProductTextProcessor.extractBrand(extractProductName(productJson));
+    private double extractUnitPrice(JsonObject price) {
+        return price.get("unit_price").getAsDouble();
     }
 
-    private String normalizeProductName(JsonObject productJson) {
-        return ProductTextProcessor.normalizeName(extractProductName(productJson));
+    private String extractUnitFormat(JsonObject price) {
+        return price.has("size_format") ? price.get("size_format").getAsString() : "";
     }
 
-    private boolean isValidProduct(JsonObject productJson) {
-        return productJson.has("id") &&
-                productJson.has("display_name") &&
-                productJson.has("price_instructions") &&
-                productJson.getAsJsonObject("price_instructions").has("unit_price");
+    private double extractUnitSize(JsonObject price) {
+        return price.has("unit_size") ? price.get("unit_size").getAsDouble() : 1;
     }
 
-    private JsonArray fetchCategories() throws IOException {
-        return extractResultsArray(fetchJson(categoriesPath));
+    private boolean isDiscount(JsonObject price) {
+        return price.has("price_decreased") && price.get("price_decreased").getAsBoolean();
     }
 
-    private JsonArray fetchNestedCategories(JsonObject categoryJson) throws IOException {
-        return fetchJson(categoriesPath + categoryJson.get("id").getAsInt())
+    private boolean isValidProduct(JsonObject json) {
+        return json.has("id")
+                && json.has("display_name")
+                && json.has("price_instructions");
+    }
+
+    private boolean isAllowed(String categoryName) {
+        return allowedCategories.contains(categoryName);
+    }
+
+    private JsonArray fetchRootCategories() throws IOException {
+        return parse(send(categoriesPath)).getAsJsonArray("results");
+    }
+
+    private JsonArray fetchNestedCategories(JsonObject category) throws IOException {
+        return parse(send(categoriesPath + category.get("id").getAsInt()))
                 .getAsJsonArray("categories");
     }
 
-    private JsonObject fetchJson(String path) throws IOException {
-        for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-            try {
-                return parseResponse(sendRequest(path));
-            } catch (java.net.SocketTimeoutException ignored) {}
-        }
-        throw new IOException("Failed to fetch JSON from " + path);
-    }
-
-    private Connection.Response sendRequest(String path) throws IOException {
+    private String send(String path) throws IOException {
         return Jsoup.connect(apiUrl + path)
                 .ignoreContentType(true)
                 .timeout(TIMEOUT_MS)
-                .header("Accept", "application/json")
-                .header("User-Agent", "Mozilla/5.0")
-                .method(Connection.Method.GET)
-                .execute();
+                .execute()
+                .body();
     }
 
-    private JsonObject parseResponse(Connection.Response res) {
-        return JsonParser.parseString(res.body()).getAsJsonObject();
+    private JsonObject parse(String json) {
+        return JsonParser.parseString(json).getAsJsonObject();
     }
 
-    private JsonArray extractResultsArray(JsonObject responseJson) {
-        return responseJson.getAsJsonArray("results");
+    private JsonArray extractCategories(JsonElement element) {
+        return element.getAsJsonObject().getAsJsonArray("categories");
     }
 
-    private String extractProductName(JsonObject productJson) {
-        return productJson.get("display_name").getAsString();
+    private JsonArray extractProducts(JsonElement element) {
+        return element.getAsJsonObject().getAsJsonArray("products");
     }
 
-    private String extractProductId(JsonObject productJson) {
-        return productJson.get("id").getAsString();
-    }
-
-    private JsonObject extractPriceInfo(JsonObject productJson) {
-        return productJson.getAsJsonObject("price_instructions");
-    }
-
-    private double extractUnitPrice(JsonObject priceJson) {
-        return priceJson.get("unit_price").getAsDouble();
-    }
-
-    private double extractAmount(JsonObject priceJson) {
-        return priceJson.has("unit_size") && !priceJson.get("unit_size").isJsonNull()
-                ? priceJson.get("unit_size").getAsDouble()
-                : 1;
-    }
-
-    private String extractUnit(JsonObject priceJson) {
-        return priceJson.has("size_format") && !priceJson.get("size_format").isJsonNull()
-                ? priceJson.get("size_format").getAsString()
-                : "";
-    }
-
-    private boolean isOnOffer(JsonObject priceJson) {
-        return priceJson.has("price_decreased")
-                && !priceJson.get("price_decreased").isJsonNull()
-                && priceJson.get("price_decreased").getAsBoolean();
-    }
-
-    private JsonArray extractSubcategories(JsonElement categoryElement) {
-        return categoryElement.getAsJsonObject().getAsJsonArray("categories");
-    }
-
-    private JsonArray extractProducts(JsonElement categoryElement) {
-        return categoryElement.getAsJsonObject().getAsJsonArray("products");
-    }
-
-    private static class ProductAccumulator {
-        private final List<Product> products = new ArrayList<>();
-        private final Set<String> ids = new HashSet<>();
-        private final int limit;
-
-        ProductAccumulator(int limit) {
-            this.limit = limit;
-        }
-
-        void add(Product product) {
-            if (!ids.add(product.id())) return;
-            if (limit != -1 && products.size() >= limit) return;
-
-            products.add(product);
-        }
-
-        List<Product> getAllProducts() {
-            return products;
-        }
+    private String extractName(JsonObject json) {
+        return json.get("name").getAsString().toLowerCase();
     }
 }
