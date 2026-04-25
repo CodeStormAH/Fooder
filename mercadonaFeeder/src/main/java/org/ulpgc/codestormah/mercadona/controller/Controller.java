@@ -8,22 +8,18 @@ public record Controller(ProductFeeder feeder) {
     private static final ScheduledExecutorService scheduler =
             Executors.newSingleThreadScheduledExecutor();
 
-    public void execute(int maxProducts) throws Exception {
-        feeder.getProducts(maxProducts);
-    }
-
     public void startScheduler(int maxProducts) {
         scheduler.scheduleAtFixedRate(
                 () -> runSafely(maxProducts),
                 0,
-                1,
-                TimeUnit.DAYS
+                5,
+                TimeUnit.SECONDS
         );
     }
 
     private void runSafely(int maxProducts) {
         try {
-            execute(maxProducts);
+            feeder.run(maxProducts);
         } catch (Exception e) {
             throw new RuntimeException("Scheduled execution failed", e);
         }
