@@ -12,6 +12,7 @@
     <modules>
         <module>alcampoFeeder</module>
         <module>mercadonaFeeder</module>
+        <module>eventStoreBuilder</module>
     </modules>
 
 </project>

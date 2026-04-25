@@ -9,6 +9,7 @@
         <module name="mercadona-module" />
         <module name="mercadonaFeeder" />
         <module name="alcampoFeeder" />
+        <module name="eventStoreBuilder" />
       </profile>
     </annotationProcessing>
   </component>
