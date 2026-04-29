@@ -12,7 +12,7 @@ public class Main {
         String brokerUrl = args[0]; // tcp://localhost:61616
         String topic = args[1];     // comparison.Product
         String source = args[2];    // Tú: "alcampo" | Compañero: "mercadona"
-        String root = args[3];      // "datalake"
+        String root = args[3];      // "eventstore"
 
         FileEventStore fileStore = new FileEventStore(root);
         ActiveMQSubscriber subscriber = new ActiveMQSubscriber(brokerUrl, topic, source, fileStore);
