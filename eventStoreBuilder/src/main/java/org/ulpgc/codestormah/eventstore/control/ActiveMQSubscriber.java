@@ -10,7 +10,12 @@ public class ActiveMQSubscriber {
     private final String topicName;
     private final String source;
     private final FileEventStore store;
+
     private final Gson gson = new Gson();
+
+    private Connection connection;
+    private Session session;
+    private MessageConsumer consumer;
 
     public ActiveMQSubscriber(String brokerUrl, String topicName, String source, FileEventStore store) {
         this.brokerUrl = brokerUrl;
@@ -19,38 +24,91 @@ public class ActiveMQSubscriber {
         this.store = store;
     }
 
-    public void start() throws JMSException {
-        Connection connection = createConnection();
-        // Paso 2: El ClientID es obligatorio para que sea duradera
-        connection.setClientID("StoreBuilder_" + source + "_" + topicName);
-        connection.start();
-
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = session.createTopic(topicName);
-
-        // Paso 2: Suscripción Duradera
-        MessageConsumer consumer = session.createDurableSubscriber(topic, "DurableSubscription_" + source);
-
-        consumer.setMessageListener(this::onMessage);
+    public void start() {
+        while (true) {
+            try {
+                connect();
+                listen();
+                break;
+            } catch (Exception e) {
+                logError("Connection failed. Retrying...", e);
+                sleep();
+            }
+        }
     }
 
-    private void onMessage(Message message) {
+    private void connect() throws JMSException {
+        connection = createConnection();
+        connection.setClientID(buildClientId());
+        connection.start();
+
+        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Topic topic = session.createTopic(topicName);
+
+        consumer = session.createDurableSubscriber(topic, buildSubscriptionName());
+    }
+
+    private void listen() throws JMSException {
+        consumer.setMessageListener(this::handleMessage);
+    }
+
+    private void handleMessage(Message message) {
         try {
-            if (message instanceof TextMessage) {
-                String text = ((TextMessage) message).getText();
+            TextMessage textMessage = extractTextMessage(message);
 
-                // Paso 3: Deserializar a JsonObject para validar formato
-                JsonObject jsonObject = gson.fromJson(text, JsonObject.class);
+            JsonObject json = parse(textMessage.getText());
+            store.dispatch(json.toString(), topicName, source);
 
-                // Enviar al gestor de archivos
-                store.dispatch(jsonObject.toString(), topicName, source);
-            }
-        } catch (JMSException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logError("Error processing message", e);
         }
+    }
+
+    private TextMessage extractTextMessage(Message message) {
+        if (message instanceof TextMessage textMessage) {
+            return textMessage;
+        }
+        throw new IllegalArgumentException(
+                "Unsupported JMS message type: " + message.getClass()
+        );
+    }
+
+    private JsonObject parse(String text) {
+        return gson.fromJson(text, JsonObject.class);
     }
 
     private Connection createConnection() throws JMSException {
         return new ActiveMQConnectionFactory(brokerUrl).createConnection();
+    }
+
+    private String buildClientId() {
+        return "StoreBuilder_" + source + "_" + topicName;
+    }
+
+    private String buildSubscriptionName() {
+        return "Durable_" + source + "_" + topicName;
+    }
+
+    private void sleep() {
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void logError(String msg, Exception e) {
+        System.err.println(msg);
+        System.err.println(e.getMessage());
+    }
+
+    public void close() {
+        try {
+            if (consumer != null) consumer.close();
+            if (session != null) session.close();
+            if (connection != null) connection.close();
+        } catch (JMSException e) {
+            logError("Error closing JMS resources", e);
+        }
     }
 }
