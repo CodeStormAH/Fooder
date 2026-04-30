@@ -76,9 +76,7 @@ public class MercadonaFeeder implements ProductFeeder {
 
         if (!isValidProduct(json)) return;
 
-        Product product = toProduct(json, categoryName);
-        System.out.println("PUBLISHING: " + product.name());
-        publish(product);
+        publish(toProduct(json, categoryName));
     }
 
     private void publish(Product product) {
