@@ -2,33 +2,54 @@ package org.ulpgc.codestormah.eventstore.control;
 
 import java.io.*;
 import java.nio.file.*;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class FileEventStore {
-    private final String root;
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyyMMdd");
+
+    private final Path root;
+    private final Clock clock;
 
     public FileEventStore(String root) {
-        this.root = root; // Ahora root será directamente "eventstore"
+        this.root = Paths.get(root);
+        this.clock = Clock.systemUTC();
     }
 
     public void dispatch(String event, String topic, String source) {
         try {
-            // Paso 4 ajustado: {root}/{topic}/{source}
-            Path path = Paths.get(root, topic, source);
-            Files.createDirectories(path);
+            Path directory = buildDirectory(topic, source);
+            Files.createDirectories(directory);
 
-            File file = path.resolve(getFileName()).toFile();
+            Path file = directory.resolve(buildFileName());
 
-            try (PrintWriter writer = new PrintWriter(new FileWriter(file, true))) {
-                writer.println(event);
-            }
+            appendEvent(file, event);
+
         } catch (IOException e) {
-            System.err.println("Error writing to EventStore: " + e.getMessage());
+            logError(e);
         }
     }
 
-    private String getFileName() {
-        return LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".events";
+    private Path buildDirectory(String topic, String source) {
+        return root.resolve(topic).resolve(source);
+    }
+
+    private String buildFileName() {
+        return LocalDate.now(clock).format(FORMATTER) + ".events";
+    }
+
+    private void appendEvent(Path file, String event) throws IOException {
+        Files.writeString(
+                file,
+                event + System.lineSeparator(),
+                StandardOpenOption.CREATE,
+                StandardOpenOption.APPEND
+        );
+    }
+
+    private void logError(IOException e) {
+        System.err.println("Error writing to EventStore: " + e.getMessage());
     }
 }
