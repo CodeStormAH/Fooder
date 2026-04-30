@@ -25,13 +25,13 @@ public class EventPublisher {
     }
 
     public void publish(String topic, Object payload) {
-        executeWithRetry(() -> sendEvent(topic, payload), topic);
+        executeWithRetry(() -> sendEvent(payload), topic);
     }
 
-    private void sendEvent(String topic, Object payload) throws Exception {
+    private void sendEvent(Object payload) throws Exception {
         Event event = createEvent(payload);
         String json = serialize(event);
-        TextMessage message = createMessage(json, topic);
+        TextMessage message = createMessage(json);
         producer.send(message);
     }
 
@@ -47,10 +47,8 @@ public class EventPublisher {
         return mapper.writeValueAsString(event);
     }
 
-    private TextMessage createMessage(String json, String topic) throws Exception {
-        TextMessage message = session.createTextMessage(json);
-        message.setStringProperty("type", topic);
-        return message;
+    private TextMessage createMessage(String json) throws Exception {
+        return session.createTextMessage(json);
     }
 
     private void executeWithRetry(ThrowingAction action, String topic) {
