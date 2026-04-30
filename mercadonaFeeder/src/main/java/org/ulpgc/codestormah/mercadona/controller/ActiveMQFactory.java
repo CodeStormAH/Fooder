@@ -6,7 +6,7 @@ import javax.jms.*;
 
 public class ActiveMQFactory {
 
-    public static EventPublisher createPublisher(String brokerUrl, String topicName, String source) throws Exception {
+    public static EventPublisher createPublisher(String brokerUrl, String topicName, String source) throws JMSException {
 
         Connection connection = createConnection(brokerUrl);
         Session session = createSession(connection);
@@ -27,7 +27,6 @@ public class ActiveMQFactory {
     }
 
     private static MessageProducer createProducer(Session session, String topicName) throws JMSException {
-        Topic topic = session.createTopic(topicName);
-        return session.createProducer(topic);
+        return session.createProducer(session.createTopic(topicName));
     }
 }
