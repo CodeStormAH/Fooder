@@ -1,12 +1,12 @@
 package org.ulpgc.codestormah.alcampo;
 
 import org.ulpgc.codestormah.alcampo.control.*;
-import java.io.File;
+
 import java.util.concurrent.TimeUnit;
 
 public class Main {
     public static void main(String[] args) {
-        if (args.length < 4) {
+        if (args.length < 5) {
             printUsageError();
             return;
         }
@@ -15,18 +15,19 @@ public class Main {
         String categoriesFilePath = args[1];
         String brokerUrl = args[2];
         String topicName = args[3];
+        String source = args[4];
 
-        startApplication(targetUrl, categoriesFilePath, brokerUrl, topicName);
+        startApplication(targetUrl, categoriesFilePath, brokerUrl, topicName, source);
     }
 
-    private static void startApplication(String url, String categoriesPath, String brokerUrl, String topic) {
+    private static void startApplication(String url, String categoriesPath, String brokerUrl, String topic, String source) {
         System.out.println("Starting program...");
 
         System.out.println("Starting Publisher (Scraper -> ActiveMQ)...");
         System.out.println("Broker: " + brokerUrl + " | Topic: " + topic);
 
         AlcampoFeeder feeder = new AlcampoScraperFeeder(url, categoriesPath);
-        AlcampoStore store = new ActiveMQAlcampoStore(brokerUrl, topic);
+        AlcampoStore store = new ActiveMQAlcampoStore(brokerUrl, topic, source);
         AlcampoController controller = new AlcampoController(feeder, store);
 
         controller.startScheduled(0, 1, TimeUnit.DAYS);
