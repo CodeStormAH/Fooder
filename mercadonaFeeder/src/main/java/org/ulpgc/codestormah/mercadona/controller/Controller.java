@@ -12,8 +12,8 @@ public record Controller(ProductFeeder feeder) {
         scheduler.scheduleAtFixedRate(
                 () -> runSafely(maxProducts),
                 0,
-                5,
-                TimeUnit.SECONDS
+                24,
+                TimeUnit.HOURS
         );
     }
 
