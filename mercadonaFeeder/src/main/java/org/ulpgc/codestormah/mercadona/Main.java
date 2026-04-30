@@ -22,7 +22,7 @@ public class Main {
             Set<String> allowedCategories = load(categoriesFile);
 
             EventPublisher publisher =
-                    createPublisher(connectionPath, "Product", "mercadona");
+                    createPublisher(connectionPath, eventTopic, "mercadona");
 
             MercadonaFeeder feeder = new MercadonaFeeder(
                     apiUrl,
