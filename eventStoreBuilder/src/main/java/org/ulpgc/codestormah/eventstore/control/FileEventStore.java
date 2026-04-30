@@ -9,30 +9,26 @@ public class FileEventStore {
     private final String root;
 
     public FileEventStore(String root) {
-        this.root = root;
+        this.root = root; // Ahora root será directamente "eventstore"
     }
 
     public void dispatch(String event, String topic, String source) {
         try {
-            Path path = buildPath(topic, source);
+            // Paso 4 ajustado: {root}/{topic}/{source}
+            Path path = Paths.get(root, topic, source);
             Files.createDirectories(path);
+
             File file = path.resolve(getFileName()).toFile();
 
             try (PrintWriter writer = new PrintWriter(new FileWriter(file, true))) {
-                writer.println(event); // Paso 5: Un evento JSON por línea
+                writer.println(event);
             }
         } catch (IOException e) {
-            System.err.println("Error writing to Datalake: " + e.getMessage());
+            System.err.println("Error writing to EventStore: " + e.getMessage());
         }
     }
 
-    private Path buildPath(String topic, String source) {
-        // Paso 4: eventstore/{topic}/{source}
-        return Paths.get(root, "eventstore", topic, source);
-    }
-
     private String getFileName() {
-        // Paso 4: {YYYYMMDD}.events
         return LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".events";
     }
 }
