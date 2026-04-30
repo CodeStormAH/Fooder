@@ -29,17 +29,16 @@ public class EventPublisher {
     }
 
     private void sendEvent(String topic, Object payload) throws Exception {
-        Event event = createEvent(topic, payload);
+        Event event = createEvent(payload);
         String json = serialize(event);
         TextMessage message = createMessage(json, topic);
         producer.send(message);
     }
 
-    private Event createEvent(String topic, Object payload) {
+    private Event createEvent(Object payload) {
         return new Event(
                 System.currentTimeMillis(),
                 source,
-                topic,
                 payload
         );
     }
