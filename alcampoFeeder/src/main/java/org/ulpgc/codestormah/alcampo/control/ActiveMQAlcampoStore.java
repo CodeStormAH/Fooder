@@ -1,6 +1,7 @@
 package org.ulpgc.codestormah.alcampo.control;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.ulpgc.codestormah.alcampo.model.Product;
 
@@ -10,12 +11,13 @@ import java.util.List;
 public class ActiveMQAlcampoStore implements AlcampoStore {
     private final String brokerUrl;
     private final String topicName;
-    private final Gson gson;
+    private final String source;
+    private final Gson gson = new Gson();
 
-    public ActiveMQAlcampoStore(String brokerUrl, String topicName) {
+    public ActiveMQAlcampoStore(String brokerUrl, String topicName, String source) {
         this.brokerUrl = brokerUrl;
         this.topicName = topicName;
-        this.gson = new Gson();
+        this.source = source;
     }
 
     @Override
@@ -35,8 +37,11 @@ public class ActiveMQAlcampoStore implements AlcampoStore {
         MessageProducer producer = session.createProducer(topic);
 
         for (Product product : products) {
-            String json = gson.toJson(product);
-            TextMessage message = session.createTextMessage(json);
+            JsonObject event = new JsonObject();
+            event.addProperty("ts", System.currentTimeMillis());
+            event.addProperty("ss", this.source);
+            event.add("payload", gson.toJsonTree(product));
+            TextMessage message = session.createTextMessage(event.toString());
             producer.send(message);
         }
 
