@@ -17,6 +17,7 @@ public class Main {
             String categoriesPath = args[1];
             String categoriesFile = args[2];
             String connectionPath = args[3];
+            String eventTopic = args[4];
 
             Set<String> allowedCategories = load(categoriesFile);
 
@@ -27,7 +28,8 @@ public class Main {
                     apiUrl,
                     categoriesPath,
                     allowedCategories,
-                    publisher
+                    publisher,
+                    eventTopic
             );
 
             Controller controller = new Controller(feeder);

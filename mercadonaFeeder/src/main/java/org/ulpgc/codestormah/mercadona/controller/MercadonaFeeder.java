@@ -11,23 +11,25 @@ import java.util.Set;
 public class MercadonaFeeder implements ProductFeeder {
 
     private static final int TIMEOUT_MS = 15000;
-    private static final String EVENT_TOPIC = "Product";
 
     private final String apiUrl;
     private final String categoriesPath;
     private final Set<String> allowedCategories;
     private final EventPublisher publisher;
+    private final String eventTopic;
 
     public MercadonaFeeder(
             String apiUrl,
             String categoriesPath,
             Set<String> allowedCategories,
-            EventPublisher publisher
+            EventPublisher publisher,
+            String eventTopic
     ) {
         this.apiUrl = apiUrl;
         this.categoriesPath = categoriesPath;
         this.allowedCategories = allowedCategories;
         this.publisher = publisher;
+        this.eventTopic = eventTopic;
     }
 
     @Override
@@ -75,11 +77,12 @@ public class MercadonaFeeder implements ProductFeeder {
         if (!isValidProduct(json)) return;
 
         Product product = toProduct(json, categoryName);
+        System.out.println("PUBLISHING: " + product.name());
         publish(product);
     }
 
     private void publish(Product product) {
-        publisher.publish(EVENT_TOPIC, product);
+        publisher.publish(eventTopic, product);
     }
 
     private Product toProduct(JsonObject json, String category) {
