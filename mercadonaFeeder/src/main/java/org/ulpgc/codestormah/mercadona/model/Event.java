@@ -3,6 +3,5 @@ package org.ulpgc.codestormah.mercadona.model;
 public record Event(
         long ts,
         String ss,
-        String topic,
         Object payload
 ) {}
