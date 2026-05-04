@@ -25,7 +25,6 @@ import java.util.UUID;
 public class AlcampoScraperFeeder implements AlcampoFeeder {
     private final String baseUrl;
     private final String categoriesPath;
-    private static final int LIMIT_PER_CATEGORY = 100;
     private static final int SEARCH_WAIT_MS = 4000;
     private static final int SCROLL_WAIT_MS = 2000;
 
@@ -97,7 +96,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         int attemptsWithoutNewData = 0;
         int lastCount = 0;
 
-        while (attemptsWithoutNewData < 4 && currentCategoryCount < LIMIT_PER_CATEGORY) {
+        while (attemptsWithoutNewData < 4) {
             int addedInThisCycle = scanPageForProducts(driver, category, products, currentCategoryCount);
             currentCategoryCount += addedInThisCycle;
 
@@ -119,7 +118,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         try {
             List<WebElement> elements = driver.findElements(By.cssSelector("[data-test^='fop-wrapper']"));
             for (WebElement element : elements) {
-                if (currentCount + added >= LIMIT_PER_CATEGORY) break;
                 if (processElement(element, category, products)) {
                     added++;
                 }
