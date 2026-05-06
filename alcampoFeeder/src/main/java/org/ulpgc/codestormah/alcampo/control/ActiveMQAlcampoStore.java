@@ -7,6 +7,7 @@ import org.ulpgc.codestormah.alcampo.model.Product;
 
 import javax.jms.*;
 import java.util.List;
+import java.time.Instant;
 
 public class ActiveMQAlcampoStore implements AlcampoStore {
     private final String brokerUrl;
@@ -38,7 +39,7 @@ public class ActiveMQAlcampoStore implements AlcampoStore {
 
         for (Product product : products) {
             JsonObject event = new JsonObject();
-            event.addProperty("ts", System.currentTimeMillis());
+            event.addProperty("ts", Instant.now().toString());
             event.addProperty("ss", this.source);
             event.add("payload", gson.toJsonTree(product));
             TextMessage message = session.createTextMessage(event.toString());
