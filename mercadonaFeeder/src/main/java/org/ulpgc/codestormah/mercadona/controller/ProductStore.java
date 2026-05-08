@@ -6,5 +6,5 @@ import java.sql.SQLException;
 import java.util.List;
 
 public interface ProductStore {
-    void save(List<Product> products) throws SQLException;
+    void save(List<Product> products);
 }
