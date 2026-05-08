@@ -1,7 +1,9 @@
 package org.ulpgc.codestormah.mercadona.model;
 
+import java.time.LocalDateTime;
+
 public record Event(
-        long ts,
+        LocalDateTime ts,
         String ss,
-        Object payload
+        Product payload
 ) {}
