@@ -1,45 +1,53 @@
 package org.ulpgc.codestormah.business.datamart;
 
-
 import org.ulpgc.codestormah.business.model.Product;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ProductStore {
-    private final Map<String, TreeSet<Product>> productsByCategory;
-    private final Comparator<Product> comparator;
+    // Mapa: Clave = "id-source" | Valor = El producto más reciente
+    private final Map<String, Product> latestProducts = new ConcurrentHashMap<>();
 
-    public ProductStore() {
-        // SOLUCIÓN: El comparador se instancia solo una vez.
-        // Ordena por precio unitario, desempata por ID y luego por Supermercado.
-        this.comparator = Comparator.comparing(Product::getUnitPrice)
-                .thenComparing(Product::getId)
-                .thenComparing(Product::getSource);
-
-        this.productsByCategory = new ConcurrentHashMap<>();
-    }
+    private final Comparator<Product> priceComparator = Comparator
+            .comparing(Product::getUnitPrice)
+            .thenComparing(Product::getId)
+            .thenComparing(Product::getSource);
 
     public void addProduct(Product product) {
-        productsByCategory
-                .computeIfAbsent(product.getCategory(), k -> new TreeSet<>(comparator))
-                .add(product);
+        String key = product.getId() + "-" + product.getSource();
+
+        // Aquí podrías añadir una lógica de timestamp (ts) para asegurar
+        // que no guardas un evento viejo encima de uno nuevo.
+        latestProducts.put(key, product);
     }
 
     public Set<String> getCategories() {
-        return productsByCategory.keySet();
+        Set<String> categories = new TreeSet<>();
+        for (Product p : latestProducts.values()) {
+            categories.add(p.getCategory());
+        }
+        return categories;
     }
 
     public Collection<Product> getProductsByCategory(String category) {
-        return productsByCategory.getOrDefault(category, new TreeSet<>());
+        List<Product> filtered = new ArrayList<>();
+        for (Product p : latestProducts.values()) {
+            if (p.getCategory().equalsIgnoreCase(category)) {
+                filtered.add(p);
+            }
+        }
+        filtered.sort(priceComparator);
+        return filtered;
     }
 
     public Product getCheapestProduct(String category) {
-        TreeSet<Product> products = productsByCategory.get(category);
-        return (products == null || products.isEmpty()) ? null : products.first();
+        return getProductsByCategory(category).stream()
+                .findFirst()
+                .orElse(null);
     }
 
     public Product getMostExpensiveProduct(String category) {
-        TreeSet<Product> products = productsByCategory.get(category);
-        return (products == null || products.isEmpty()) ? null : products.last();
+        List<Product> products = (List<Product>) getProductsByCategory(category);
+        return products.isEmpty() ? null : products.get(products.size() - 1);
     }
 }
