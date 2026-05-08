@@ -6,6 +6,8 @@ import org.ulpgc.codestormah.mercadona.model.Product;
 import org.ulpgc.codestormah.mercadona.model.ProductTextProcessor;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public class MercadonaFeeder implements ProductFeeder {
@@ -15,40 +17,38 @@ public class MercadonaFeeder implements ProductFeeder {
     private final String apiUrl;
     private final String categoriesPath;
     private final Set<String> allowedCategories;
-    private final EventPublisher publisher;
-    private final String eventTopic;
 
     public MercadonaFeeder(
             String apiUrl,
             String categoriesPath,
-            Set<String> allowedCategories,
-            EventPublisher publisher,
-            String eventTopic
+            Set<String> allowedCategories
     ) {
         this.apiUrl = apiUrl;
         this.categoriesPath = categoriesPath;
         this.allowedCategories = allowedCategories;
-        this.publisher = publisher;
-        this.eventTopic = eventTopic;
     }
 
     @Override
-    public void run(int maxProducts) throws IOException {
+    public List<Product> run(int maxProducts) throws IOException {
+        List<Product> products = new ArrayList<>();
+
         for (JsonElement rootCategory : fetchRootCategories()) {
-            processRootCategory(rootCategory);
+            processRootCategory(rootCategory, products);
         }
+
+        return products;
     }
 
-    private void processRootCategory(JsonElement root) throws IOException {
+    private void processRootCategory(JsonElement root, List<Product> products) throws IOException {
         JsonArray subcategories = extractCategories(root);
         if (subcategories == null) return;
 
         for (JsonElement sub : subcategories) {
-            processSubcategory(sub);
+            processSubcategory(sub, products);
         }
     }
 
-    private void processSubcategory(JsonElement subcategoryElement) throws IOException {
+    private void processSubcategory(JsonElement subcategoryElement, List<Product> products) throws IOException {
         JsonObject subcategory = subcategoryElement.getAsJsonObject();
         String categoryName = extractName(subcategory);
 
@@ -58,29 +58,25 @@ public class MercadonaFeeder implements ProductFeeder {
         if (nestedCategories == null) return;
 
         for (JsonElement nested : nestedCategories) {
-            processProductList(nested, categoryName);
+            processProductList(nested, categoryName, products);
         }
     }
 
-    private void processProductList(JsonElement categoryElement, String categoryName) {
-        JsonArray products = extractProducts(categoryElement);
-        if (products == null) return;
+    private void processProductList(JsonElement categoryElement, String categoryName, List<Product> products) {
+        JsonArray items = extractProducts(categoryElement);
+        if (items == null) return;
 
-        for (JsonElement productElement : products) {
-            processProduct(productElement, categoryName);
+        for (JsonElement productElement : items) {
+            processProduct(productElement, categoryName, products);
         }
     }
 
-    private void processProduct(JsonElement productElement, String categoryName) {
+    private void processProduct(JsonElement productElement, String categoryName, List<Product> products) {
         JsonObject json = productElement.getAsJsonObject();
 
         if (!isValidProduct(json)) return;
 
-        publish(toProduct(json, categoryName));
-    }
-
-    private void publish(Product product) {
-        publisher.publish(eventTopic, product);
+        products.add(toProduct(json, categoryName));
     }
 
     private Product toProduct(JsonObject json, String category) {
