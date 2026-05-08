@@ -1,10 +1,14 @@
 package org.ulpgc.codestormah.mercadona.controller;
 
+import org.ulpgc.codestormah.mercadona.model.Product;
+
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public record Controller(ProductFeeder feeder) {
+public record Controller(ProductFeeder feeder, ProductStore store) {
+
     private static final ScheduledExecutorService scheduler =
             Executors.newSingleThreadScheduledExecutor();
 
@@ -12,14 +16,16 @@ public record Controller(ProductFeeder feeder) {
         scheduler.scheduleAtFixedRate(
                 () -> runSafely(maxProducts),
                 0,
-                24,
-                TimeUnit.HOURS
+                5,
+                TimeUnit.MINUTES
         );
     }
 
     private void runSafely(int maxProducts) {
         try {
-            feeder.run(maxProducts);
+            List<Product> products = feeder.run(maxProducts);
+            store.save(products);
+
         } catch (Exception e) {
             throw new RuntimeException("Scheduled execution failed", e);
         }
