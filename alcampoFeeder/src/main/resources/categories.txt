@@ -1,4 +1,20 @@
-Aguas sin gas
-Leche desnatada
-Quesos
-Refrescos de cola
+Cerveza
+Licores
+Sidra
+Cava
+Vino blanco
+Tinto de verano
+Sangria
+Vino lambrusco
+Vino espumoso
+Vino tinto
+Refresco de té
+Refresco sin gas
+Tónica
+Bitter
+Refresco de naranja
+Refresco de limón
+Refresco de cola
+Isotónico
+Energético
+Agua
