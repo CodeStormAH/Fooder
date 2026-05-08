@@ -5,11 +5,18 @@ import org.ulpgc.codestormah.business.datamart.ProductStore;
 
 public class Main {
     public static void main(String[] args) {
+        // Validación de seguridad para evitar errores al arrancar
+        if (args.length < 4) {
+            System.err.println("Error: Parámetros insuficientes.");
+            System.err.println("Uso: <BrokerURL> <TopicName> <EventStorePath> <ApiPort>");
+            System.exit(1);
+        }
+
         // Configuración (idealmente se pasaría por args[])
-        String brokerUrl = "tcp://localhost:61616";
-        String topicName = "comparison.Product"; // El topic que decidisteis
-        String eventStorePath = "eventstore";
-        int apiPort = 7000;
+        String brokerUrl = args[0];
+        String topicName = args[1]; // El topic que decidisteis
+        String eventStorePath = args[2];
+        int apiPort = Integer.parseInt(args[3]);
 
         // 1. Inicializar el Datamart y el Procesador
         ProductStore productStore = new ProductStore();

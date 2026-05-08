@@ -8,8 +8,8 @@ public class Product {
     private double price;
     private double unitPrice;
     private String unit;
-    private double amount;
-    private boolean onOffer;
+    private double quantity;
+    private boolean isOnSale;
 
     // Este campo no viene en el 'payload', se lo inyectaremos desde el Evento
     private transient String source;
@@ -24,8 +24,8 @@ public class Product {
     public double getPrice() { return price; }
     public double getUnitPrice() { return unitPrice; }
     public String getUnit() { return unit; }
-    public double getAmount() { return amount; }
-    public boolean isOnOffer() { return onOffer; }
+    public double getQuantity() { return quantity; }
+    public boolean isOnSale() { return isOnSale; }
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
 }

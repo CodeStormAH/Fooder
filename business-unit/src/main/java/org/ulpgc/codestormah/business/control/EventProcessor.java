@@ -5,6 +5,7 @@ import org.ulpgc.codestormah.business.datamart.ProductStore;
 import org.ulpgc.codestormah.business.model.Event;
 import org.ulpgc.codestormah.business.model.Product;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.stream.Stream;
 
@@ -44,7 +45,7 @@ public class EventProcessor {
         try (Stream<Path> paths = Files.walk(root)) {
             paths.filter(p -> p.toString().endsWith(".events"))
                     .forEach(path -> {
-                        try (Stream<String> lines = Files.lines(path)) {
+                        try (Stream<String> lines = Files.lines(path, StandardCharsets.UTF_8)) {
                             lines.forEach(this::processJson);
                         } catch (IOException e) { e.printStackTrace(); }
                     });

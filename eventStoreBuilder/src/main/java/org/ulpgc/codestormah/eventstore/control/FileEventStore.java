@@ -1,6 +1,7 @@
 package org.ulpgc.codestormah.eventstore.control;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -44,6 +45,7 @@ public class FileEventStore {
         Files.writeString(
                 file,
                 event + System.lineSeparator(),
+                StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE,
                 StandardOpenOption.APPEND
         );
