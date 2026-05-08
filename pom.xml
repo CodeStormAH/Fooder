@@ -13,6 +13,7 @@
         <module>alcampoFeeder</module>
         <module>mercadonaFeeder</module>
         <module>eventStoreBuilder</module>
+        <module>business-unit</module>
     </modules>
 
 </project>
