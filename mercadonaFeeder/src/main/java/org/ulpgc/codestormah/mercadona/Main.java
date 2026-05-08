@@ -5,11 +5,11 @@ import org.ulpgc.codestormah.mercadona.controller.*;
 import java.util.Set;
 
 import static org.ulpgc.codestormah.mercadona.config.CategoryLoader.load;
-import static org.ulpgc.codestormah.mercadona.controller.ActiveMQFactory.createPublisher;
+import static org.ulpgc.codestormah.mercadona.controller.ActiveMQFactory.createStore;
 
 public class Main {
 
-     static void main(String[] args) {
+    static void main(String[] args) {
         try {
             validateArgs(args);
 
@@ -21,18 +21,15 @@ public class Main {
 
             Set<String> allowedCategories = load(categoriesFile);
 
-            EventPublisher publisher =
-                    createPublisher(connectionPath, eventTopic, "mercadona");
+            ProductStore store = createStore(connectionPath, eventTopic, "mercadona");
 
             MercadonaFeeder feeder = new MercadonaFeeder(
                     apiUrl,
                     categoriesPath,
-                    allowedCategories,
-                    publisher,
-                    eventTopic
+                    allowedCategories
             );
 
-            Controller controller = new Controller(feeder);
+            Controller controller = new Controller(feeder, store);
 
             controller.startScheduler(-1);
 
@@ -42,9 +39,9 @@ public class Main {
     }
 
     private static void validateArgs(String[] args) {
-        if (args.length < 4) {
+        if (args.length < 5) {
             throw new IllegalArgumentException(
-                    "Usage: java Main <apiUrl> <categoriesPath> <categoriesFile> <connectionPath>"
+                    "Usage: java Main <apiUrl> <categoriesPath> <categoriesFile> <connectionPath> <topic>"
             );
         }
     }
