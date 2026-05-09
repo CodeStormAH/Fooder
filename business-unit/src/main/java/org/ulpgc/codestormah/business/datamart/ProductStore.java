@@ -3,13 +3,13 @@ package org.ulpgc.codestormah.business.datamart;
 import org.ulpgc.codestormah.business.model.Product;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class ProductStore {
-    // El mapa de historial es el único almacén de datos
+    // El mapa de historial es el único almacén de datos (Thread-Safe)
     private final Map<String, List<Product>> history = new ConcurrentHashMap<>();
 
-    // Definimos el comparador aquí para que pueda usarse en toda la clase
     private final Comparator<Product> priceComparator = Comparator
             .comparing(Product::getUnitPrice)
             .thenComparing(Product::getId)
@@ -17,18 +17,18 @@ public class ProductStore {
 
     public void addProduct(Product product) {
         String key = product.getId() + "-" + product.getSource();
-        history.computeIfAbsent(key, k -> new ArrayList<>()).add(product);
+        // CLEAN CODE: Usamos CopyOnWriteArrayList para evitar fallos de concurrencia
+        history.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>()).add(product);
     }
 
     public List<Product> getProductHistory(String productId, String source) {
         return history.getOrDefault(productId + "-" + source, Collections.emptyList());
     }
 
-    // CORRECCIÓN AQUÍ:
-    public Collection<Product> getProductsByCategory(String category) {
+    // CLEAN CODE: Ahora devuelve List<Product> en lugar de Collection para evitar casteos forzados
+    public List<Product> getProductsByCategory(String category) {
         List<Product> filtered = new ArrayList<>();
 
-        // Recorremos el historial y sacamos el último precio de cada producto
         for (List<Product> productHistory : history.values()) {
             if (!productHistory.isEmpty()) {
                 Product latest = productHistory.get(productHistory.size() - 1);
@@ -37,7 +37,6 @@ public class ProductStore {
                 }
             }
         }
-        // Usamos el comparador que definimos arriba
         filtered.sort(priceComparator);
         return filtered;
     }
@@ -49,7 +48,7 @@ public class ProductStore {
     }
 
     public Product getMostExpensiveProduct(String category) {
-        List<Product> products = (List<Product>) getProductsByCategory(category);
+        List<Product> products = getProductsByCategory(category);
         return products.isEmpty() ? null : products.get(products.size() - 1);
     }
 
@@ -60,13 +59,8 @@ public class ProductStore {
                 .collect(Collectors.toSet());
     }
 
-    // Este método ya lo hace bien usando stream, lo mantenemos por si la API lo usa
-    public List<Product> getLatestProductsByCategory(String category) {
-        return (List<Product>) getProductsByCategory(category);
-    }
-
     public Map<String, Object> getRecommendation(String category) {
-        List<Product> products = (List<Product>) getProductsByCategory(category);
+        List<Product> products = getProductsByCategory(category);
 
         if (products.isEmpty()) return Collections.emptyMap();
 
@@ -85,7 +79,6 @@ public class ProductStore {
         result.put("category", category);
         result.put("recommendedSource", bestSource);
 
-        // Añadimos el "Más barato individual" como pediste
         Product cheapest = products.get(0);
         result.put("cheapestProduct", Map.of(
                 "name", cheapest.getName(),
