@@ -11,10 +11,8 @@ public class Product {
     private double quantity;
     private boolean isOnSale;
 
-    // Este campo no viene en el 'payload', se lo inyectaremos desde el Evento
     private transient String source;
 
-    // Constructor vacío necesario para Gson
     public Product() {}
 
     public String getId() { return id; }

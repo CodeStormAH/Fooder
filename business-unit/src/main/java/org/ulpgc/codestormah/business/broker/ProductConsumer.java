@@ -20,14 +20,12 @@ public class ProductConsumer {
             ConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
             Connection connection = factory.createConnection();
 
-            // REQUISITO: ClientID para hacer la suscripción duradera
             connection.setClientID("BusinessUnit_API_Client");
             connection.start();
 
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             Topic topic = session.createTopic(topicName);
 
-            // REQUISITO: Suscripción duradera
             MessageConsumer consumer = session.createDurableSubscriber(topic, "BusinessUnit_Sub");
 
             System.out.println("🎧 Escuchando eventos en tiempo real en ActiveMQ...");

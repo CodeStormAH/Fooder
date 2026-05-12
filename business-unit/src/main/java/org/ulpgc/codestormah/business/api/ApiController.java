@@ -15,7 +15,6 @@ public class ApiController {
     public void start() {
         Javalin app = Javalin.create().start(port);
 
-        // CLEAN CODE: Todas las rutas bajo el estándar /api/...
         app.get("/api/health", ctx -> ctx.result("Business Unit running"));
         app.get("/api/categories", ctx -> ctx.json(productStore.getCategories()));
         app.get("/api/products/{category}", ctx -> ctx.json(productStore.getProductsByCategory(ctx.pathParam("category"))));

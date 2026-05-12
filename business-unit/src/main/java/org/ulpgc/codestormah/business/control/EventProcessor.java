@@ -18,7 +18,6 @@ public class EventProcessor {
         this.gson = new Gson();
     }
 
-    // Lógica UNIFICADA para tiempo real e histórico
     public void processJson(String json) {
         try {
             Event event = gson.fromJson(json, Event.class);
@@ -35,7 +34,6 @@ public class EventProcessor {
         }
     }
 
-    // REQUISITO: Carga de eventos históricos (Sprint 3)
     public void loadHistoricalData(String eventStorePath) {
         Path root = Paths.get(eventStorePath);
         if (!Files.exists(root)) {

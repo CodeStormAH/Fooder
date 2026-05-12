@@ -7,7 +7,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class ProductStore {
-    // El mapa de historial es el único almacén de datos (Thread-Safe)
     private final Map<String, List<Product>> history = new ConcurrentHashMap<>();
 
     private final Comparator<Product> priceComparator = Comparator
@@ -25,7 +24,6 @@ public class ProductStore {
         return history.getOrDefault(productId + "-" + source, Collections.emptyList());
     }
 
-    // CLEAN CODE: Ahora devuelve List<Product> en lugar de Collection para evitar casteos forzados
     public List<Product> getProductsByCategory(String category) {
         List<Product> filtered = new ArrayList<>();
 

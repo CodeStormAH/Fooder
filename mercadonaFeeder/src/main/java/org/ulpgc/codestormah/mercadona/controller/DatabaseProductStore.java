@@ -100,7 +100,7 @@ public class DatabaseProductStore implements ProductStore {
         statement.setString(3, product.normalizedName());
         statement.setString(4, product.brand());
         statement.setString(5, product.category());
-        statement.setDouble(6, product.amount());
+        statement.setDouble(6, product.quantity());
         statement.setString(7, product.unit());
     }
 
@@ -117,6 +117,6 @@ public class DatabaseProductStore implements ProductStore {
     private void fillPrice(PreparedStatement statement, Product product) throws SQLException {
         statement.setString(1, product.id());
         statement.setDouble(2, product.unitPrice());
-        statement.setBoolean(3, product.onOffer());
+        statement.setBoolean(3, product.isOnSale());
     }
 }
