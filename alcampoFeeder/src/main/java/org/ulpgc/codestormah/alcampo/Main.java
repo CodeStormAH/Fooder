@@ -30,7 +30,7 @@ public class Main {
         AlcampoStore store = new ActiveMQAlcampoStore(brokerUrl, topic, source);
         AlcampoController controller = new AlcampoController(feeder, store);
 
-        controller.startScheduled(0, 1, TimeUnit.DAYS);
+        controller.startScheduled(0, 24, TimeUnit.HOURS);
     }
 
     private static void printUsageError() {
