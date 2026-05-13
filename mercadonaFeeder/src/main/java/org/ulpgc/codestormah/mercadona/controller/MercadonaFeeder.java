@@ -72,11 +72,52 @@ public class MercadonaFeeder implements ProductFeeder {
     }
 
     private void processProduct(JsonElement productElement, String categoryName, List<Product> products) {
+
         JsonObject json = productElement.getAsJsonObject();
 
         if (!isValidProduct(json)) return;
 
-        products.add(toProduct(json, categoryName));
+        String productName = json.get("display_name")
+                .getAsString()
+                .toLowerCase();
+
+        String finalCategory = resolveCategory(categoryName, productName);
+
+        if (finalCategory != null) {
+            products.add(toProduct(json, finalCategory));
+        }
+    }
+
+    private String resolveCategory(String categoryName, String productName) {
+
+        return switch (categoryName) {
+
+            case "sidra y cava" -> {
+                if (productName.contains("sidra")) yield "sidra";
+                if (productName.contains("cava")) yield "cava";
+                yield null;
+            }
+
+            case "tónica y bitter" -> {
+                if (productName.contains("tónica")) yield "tónica";
+                if (productName.contains("bitter")) yield "bitter";
+                yield null;
+            }
+
+            case "isotónico y energético" -> {
+                if (productName.contains("isotónica")) yield "isotónico";
+                if (productName.contains("energética")) yield "energético";
+                yield null;
+            }
+
+            case "refresco de naranja y limón" -> {
+                if (productName.contains("Refresco de naranja")) yield "refresco de naranja";
+                if (productName.contains("Refresco de limón")) yield "refresco de limón";
+                yield null;
+            }
+
+            default -> categoryName;
+        };
     }
 
     private Product toProduct(JsonObject json, String category) {
