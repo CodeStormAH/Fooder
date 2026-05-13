@@ -30,7 +30,18 @@ public class ActiveMQFactory {
                         Event event = new Event(
                                 LocalDateTime.now().withNano(0),
                                 source,
-                                product
+
+                                product.id(),
+                                product.name(),
+                                product.normalizedName(),
+                                product.brand(),
+                                product.category(),
+
+                                product.unitPrice(),
+                                product.unit(),
+                                product.quantity(),
+
+                                product.isOnSale()
                         );
 
                         String json = mapper.writeValueAsString(event);
