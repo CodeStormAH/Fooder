@@ -1,20 +1,18 @@
-import org.ulpgc.codestormah.business.api.ApiController;
-import org.ulpgc.codestormah.business.broker.ProductConsumer;
-import org.ulpgc.codestormah.business.control.EventProcessor;
-import org.ulpgc.codestormah.business.datamart.ProductStore;
+import org.ulpgc.codestormah.business.view.ApiController;
+import org.ulpgc.codestormah.business.controller.ProductConsumer;
+import org.ulpgc.codestormah.business.controller.EventProcessor;
+import org.ulpgc.codestormah.business.controller.ProductStore;
 
 public class Main {
     public static void main(String[] args) {
-        // Validación de seguridad para evitar errores al arrancar
         if (args.length < 4) {
             System.err.println("Error: Parámetros insuficientes.");
             System.err.println("Uso: <BrokerURL> <TopicName> <EventStorePath> <ApiPort>");
             System.exit(1);
         }
 
-        // Configuración (idealmente se pasaría por args[])
         String brokerUrl = args[0];
-        String topicName = args[1]; // El topic que decidisteis
+        String topicName = args[1];
         String eventStorePath = args[2];
         int apiPort = Integer.parseInt(args[3]);
 

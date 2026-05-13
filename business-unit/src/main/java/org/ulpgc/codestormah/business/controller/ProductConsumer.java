@@ -1,6 +1,5 @@
-package org.ulpgc.codestormah.business.broker;
+package org.ulpgc.codestormah.business.controller;
 
-import org.ulpgc.codestormah.business.control.EventProcessor;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import javax.jms.*;
 

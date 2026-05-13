@@ -1,4 +1,4 @@
-package org.ulpgc.codestormah.business.datamart;
+package org.ulpgc.codestormah.business.controller;
 
 import org.ulpgc.codestormah.business.model.Product;
 import java.util.*;
@@ -16,7 +16,6 @@ public class ProductStore {
 
     public void addProduct(Product product) {
         String key = product.getId() + "-" + product.getSource();
-        // CLEAN CODE: Usamos CopyOnWriteArrayList para evitar fallos de concurrencia
         history.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>()).add(product);
     }
 

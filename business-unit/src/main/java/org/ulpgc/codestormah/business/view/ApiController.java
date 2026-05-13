@@ -1,6 +1,6 @@
-package org.ulpgc.codestormah.business.api;
+package org.ulpgc.codestormah.business.view;
 
-import org.ulpgc.codestormah.business.datamart.ProductStore;
+import org.ulpgc.codestormah.business.controller.ProductStore;
 import io.javalin.Javalin;
 
 public class ApiController {

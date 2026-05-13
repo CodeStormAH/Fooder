@@ -1,7 +1,6 @@
-package org.ulpgc.codestormah.business.control;
+package org.ulpgc.codestormah.business.controller;
 
 import com.google.gson.Gson;
-import org.ulpgc.codestormah.business.datamart.ProductStore;
 import org.ulpgc.codestormah.business.model.Event;
 import org.ulpgc.codestormah.business.model.Product;
 import java.io.IOException;
@@ -24,7 +23,6 @@ public class EventProcessor {
             if (event != null && event.getPayload() != null) {
                 Product product = event.getPayload();
 
-                // SOLUCIÓN: Inyectamos el supermercado de origen (ss) al producto
                 product.setSource(event.getSs());
 
                 store.addProduct(product);
