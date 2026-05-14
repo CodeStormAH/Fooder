@@ -1,17 +1,1 @@
-Cerveza
-Sidra
-Cava
-Vino blanco
-Tinto de verano
-Sangria
-Vino tinto
-Refresco de té
-Refresco sin gas
-Tónica
-Bitter
-Refresco de naranja
-Refresco de limón
-Refresco de cola
-Isotónico
-Energético
-Agua
+agua:agua sin gas

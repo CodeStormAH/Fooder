@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,13 +36,14 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
 
     @Override
     public List<Product> fetchProducts() {
-        List<String> categories = loadCategories();
+        // Ahora devuelve un Map (Categoría -> Búsqueda)
+        Map<String, String> categories = loadCategories();
         if (categories.isEmpty()) return new ArrayList<>();
 
         return executeScrapingSession(categories);
     }
 
-    private List<Product> executeScrapingSession(List<String> categories) {
+    private List<Product> executeScrapingSession(Map<String, String> categories) {
         WebDriver driver = setupDriver();
         Map<String, Product> products = new HashMap<>();
         try {
@@ -60,22 +62,27 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         return new ChromeDriver(options);
     }
 
-    private void processAllCategories(WebDriver driver, List<String> categories, Map<String, Product> products) {
-        for (String category : categories) {
-            if (category.isBlank()) continue;
-            System.out.println("Searching for: " + category);
-            scrapeCategory(driver, category, products);
+    private void processAllCategories(WebDriver driver, Map<String, String> categories, Map<String, Product> products) {
+        // Iteramos sobre las claves (nombre de categoría) y valores (término de búsqueda)
+        for (Map.Entry<String, String> entry : categories.entrySet()) {
+            String categoryName = entry.getKey();
+            String searchTerm = entry.getValue();
+
+            if (categoryName.isBlank() || searchTerm.isBlank()) continue;
+
+            System.out.println("Searching for: '" + searchTerm + "' (Saving as Category: '" + categoryName + "')");
+            scrapeCategory(driver, categoryName, searchTerm, products);
         }
     }
 
-    private void scrapeCategory(WebDriver driver, String category, Map<String, Product> products) {
+    private void scrapeCategory(WebDriver driver, String categoryName, String searchTerm, Map<String, Product> products) {
         navigateToHome(driver);
         acceptCookies(driver);
-        performSearch(driver, category);
-        extractCategoryProducts(driver, category, products);
+        performSearch(driver, searchTerm);
+        extractCategoryProducts(driver, categoryName, products);
     }
 
-    private void performSearch(WebDriver driver, String category) {
+    private void performSearch(WebDriver driver, String searchTerm) {
         try {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
             WebElement searchBar = wait.until(ExpectedConditions.visibilityOfElementLocated(
@@ -83,21 +90,21 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             ));
 
             searchBar.clear();
-            searchBar.sendKeys(category);
+            searchBar.sendKeys(searchTerm);
             searchBar.sendKeys(Keys.ENTER);
             pause(SEARCH_WAIT_MS);
         } catch (Exception e) {
-            System.err.println("Search error for '" + category + "': " + e.getMessage());
+            System.err.println("Search error for '" + searchTerm + "': " + e.getMessage());
         }
     }
 
-    private void extractCategoryProducts(WebDriver driver, String category, Map<String, Product> products) {
+    private void extractCategoryProducts(WebDriver driver, String categoryName, Map<String, Product> products) {
         int currentCategoryCount = 0;
         int attemptsWithoutNewData = 0;
         int lastCount = 0;
 
         while (attemptsWithoutNewData < 4) {
-            int addedInThisCycle = scanPageForProducts(driver, category, products, currentCategoryCount);
+            int addedInThisCycle = scanPageForProducts(driver, categoryName, products, currentCategoryCount);
             currentCategoryCount += addedInThisCycle;
 
             scrollDown(driver);
@@ -110,15 +117,15 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                 lastCount = currentCategoryCount;
             }
         }
-        System.out.println("   Finished " + category + " (" + currentCategoryCount + " products)");
+        System.out.println("   Finished category '" + categoryName + "' (" + currentCategoryCount + " products)");
     }
 
-    private int scanPageForProducts(WebDriver driver, String category, Map<String, Product> products, int currentCount) {
+    private int scanPageForProducts(WebDriver driver, String categoryName, Map<String, Product> products, int currentCount) {
         int added = 0;
         try {
             List<WebElement> elements = driver.findElements(By.cssSelector("[data-test^='fop-wrapper']"));
             for (WebElement element : elements) {
-                if (processElement(element, category, products)) {
+                if (processElement(element, categoryName, products)) {
                     added++;
                 }
             }
@@ -126,19 +133,19 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         return added;
     }
 
-    private boolean processElement(WebElement element, String category, Map<String, Product> products) {
+    private boolean processElement(WebElement element, String categoryName, Map<String, Product> products) {
         try {
             String fullName = element.findElement(By.cssSelector("[data-test='fop-title']")).getText();
             if (fullName.isEmpty() || products.containsKey(fullName)) return false;
 
-            products.put(fullName, createProductFromElement(element, fullName, category));
+            products.put(fullName, createProductFromElement(element, fullName, categoryName));
             return true;
         } catch (Exception e) {
             return false;
         }
     }
 
-    private Product createProductFromElement(WebElement el, String name, String category) {
+    private Product createProductFromElement(WebElement el, String name, String categoryName) {
         double price = fetchPrice(el, "[data-test='fop-price']");
         double unitPrice = fetchPrice(el, "[data-test='fop-price-per-unit']");
         String sizeText = getElementText(el, "[data-test='fop-size'] span", "[data-test='fop-size']");
@@ -150,7 +157,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
 
         return new Product(
                 deterministicId, name, normalizedName,
-                brand, category, price, unitPrice, parseUnit(sizeText),
+                brand, categoryName, price, unitPrice, parseUnit(sizeText),
                 parseQuantity(sizeText), isSale
         );
     }
@@ -222,13 +229,24 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         return cleaned.isEmpty() ? fullName.toLowerCase() : cleaned;
     }
 
-    private List<String> loadCategories() {
+    private Map<String, String> loadCategories() {
+        Map<String, String> categoryMap = new LinkedHashMap<>();
         try {
-            return Files.readAllLines(Paths.get(this.categoriesPath));
+            List<String> lines = Files.readAllLines(Paths.get(this.categoriesPath));
+            for (String line : lines) {
+                if (line.trim().isEmpty()) continue;
+
+                String[] parts = line.split(":");
+                if (parts.length == 2) {
+                    categoryMap.put(parts[0].trim(), parts[1].trim());
+                } else {
+                    categoryMap.put(line.trim(), line.trim());
+                }
+            }
         } catch (IOException e) {
             System.err.println("Critical error reading categories file: " + e.getMessage());
-            return new ArrayList<>();
         }
+        return categoryMap;
     }
 
     private void navigateToHome(WebDriver driver) {
