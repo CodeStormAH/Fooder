@@ -1,1 +1,16 @@
+cerveza
+licores
+sidra
+cava
+vino blanco
+vino tinto
+refresco de té
+refresco sin gas
+tónica
+bitter
+refresco de naranja
+refresco de limón
+refresco de cola
+isotónico:bebida isotónica
+energético:bebida energética
 agua:agua sin gas
