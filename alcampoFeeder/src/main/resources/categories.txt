@@ -4,8 +4,6 @@ Cava
 Vino blanco
 Tinto de verano
 Sangria
-Vino lambrusco
-Vino espumoso
 Vino tinto
 Refresco de té
 Refresco sin gas

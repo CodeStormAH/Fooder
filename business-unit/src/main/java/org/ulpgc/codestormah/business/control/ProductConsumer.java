@@ -1,4 +1,4 @@
-package org.ulpgc.codestormah.business.controller;
+package org.ulpgc.codestormah.business.control;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 import javax.jms.*;

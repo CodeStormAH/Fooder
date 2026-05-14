@@ -1,4 +1,4 @@
-package org.ulpgc.codestormah.business.controller;
+package org.ulpgc.codestormah.business.control;
 
 import com.google.gson.Gson;
 import org.ulpgc.codestormah.business.model.Event;

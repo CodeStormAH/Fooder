@@ -1,4 +1,4 @@
-package org.ulpgc.codestormah.business.controller;
+package org.ulpgc.codestormah.business.control;
 
 import org.ulpgc.codestormah.business.model.Product;
 import java.util.*;

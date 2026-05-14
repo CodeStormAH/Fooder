@@ -1,7 +1,7 @@
 import org.ulpgc.codestormah.business.view.ApiController;
-import org.ulpgc.codestormah.business.controller.ProductConsumer;
-import org.ulpgc.codestormah.business.controller.EventProcessor;
-import org.ulpgc.codestormah.business.controller.ProductStore;
+import org.ulpgc.codestormah.business.control.ProductConsumer;
+import org.ulpgc.codestormah.business.control.EventProcessor;
+import org.ulpgc.codestormah.business.control.ProductStore;
 
 public class Main {
     public static void main(String[] args) {
