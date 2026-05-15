@@ -20,7 +20,19 @@ public class ProductStore {
     }
 
     public List<Product> getProductHistory(String productId, String source) {
-        return history.getOrDefault(productId + "-" + source, Collections.emptyList());
+        List<Product> fullHistory = history.getOrDefault(productId + "-" + source, Collections.emptyList());
+        if (fullHistory.isEmpty()) return fullHistory;
+
+        List<Product> filteredHistory = new ArrayList<>();
+        Product previous = null;
+
+        for (Product current : fullHistory) {
+            if (previous == null || previous.getUnitPrice() != current.getUnitPrice()) {
+                filteredHistory.add(current);
+                previous = current;
+            }
+        }
+        return filteredHistory;
     }
 
     public List<Product> getProductsByCategory(String category) {
@@ -54,40 +66,5 @@ public class ProductStore {
                 .flatMap(List::stream)
                 .map(Product::getCategory)
                 .collect(Collectors.toSet());
-    }
-
-    public Map<String, Object> getRecommendation(String category) {
-        List<Product> products = getProductsByCategory(category);
-
-        if (products.isEmpty()) return Collections.emptyMap();
-
-        Map<String, DoubleSummaryStatistics> statsBySource = products.stream()
-                .collect(Collectors.groupingBy(
-                        Product::getSs,
-                        Collectors.summarizingDouble(Product::getUnitPrice)
-                ));
-
-        String bestSource = statsBySource.entrySet().stream()
-                .min(Comparator.comparingDouble(e -> e.getValue().getAverage()))
-                .map(Map.Entry::getKey)
-                .orElse("Desconocido");
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("category", category);
-        result.put("recommendedSource", bestSource);
-
-        Product cheapest = products.get(0);
-        result.put("cheapestProduct", Map.of(
-                "name", cheapest.getName(),
-                "price", cheapest.getUnitPrice(),
-                "source", cheapest.getSs()
-        ));
-
-        result.put("comparison", statsBySource.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                e -> Math.round(e.getValue().getAverage() * 100.0) / 100.0 + " € de media"
-        )));
-
-        return result;
     }
 }
