@@ -8,11 +8,13 @@ import java.nio.file.*;
 import java.util.stream.Stream;
 
 public class EventProcessor {
-    private final ProductStore store;
+    private final ProductStore productStore;
+    private final RecommendationStore recommendationStore;
     private final Gson gson;
 
-    public EventProcessor(ProductStore store) {
-        this.store = store;
+    public EventProcessor(ProductStore productStore, RecommendationStore recommendationStore) {
+        this.productStore = productStore;
+        this.recommendationStore = recommendationStore;
         this.gson = new Gson();
     }
 
@@ -20,7 +22,8 @@ public class EventProcessor {
         try {
             Product product = gson.fromJson(json, Product.class);
             if (product != null && product.getId() != null) {
-                store.addProduct(product);
+                productStore.addProduct(product);
+                recommendationStore.update(product.getCategory()); // recálculo inmediato
             }
         } catch (Exception e) {
             System.err.println("Error parseando JSON: " + e.getMessage());

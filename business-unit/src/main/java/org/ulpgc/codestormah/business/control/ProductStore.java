@@ -12,10 +12,10 @@ public class ProductStore {
     private final Comparator<Product> priceComparator = Comparator
             .comparing(Product::getUnitPrice)
             .thenComparing(Product::getId)
-            .thenComparing(Product::getSource);
+            .thenComparing(Product::getSs);
 
     public void addProduct(Product product) {
-        String key = product.getId() + "-" + product.getSource();
+        String key = product.getId() + "-" + product.getSs();
         history.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>()).add(product);
     }
 
@@ -63,7 +63,7 @@ public class ProductStore {
 
         Map<String, DoubleSummaryStatistics> statsBySource = products.stream()
                 .collect(Collectors.groupingBy(
-                        Product::getSource,
+                        Product::getSs,
                         Collectors.summarizingDouble(Product::getUnitPrice)
                 ));
 
@@ -80,7 +80,7 @@ public class ProductStore {
         result.put("cheapestProduct", Map.of(
                 "name", cheapest.getName(),
                 "price", cheapest.getUnitPrice(),
-                "source", cheapest.getSource()
+                "source", cheapest.getSs()
         ));
 
         result.put("comparison", statsBySource.entrySet().stream().collect(Collectors.toMap(

@@ -48,7 +48,7 @@ public class ActiveMQAlcampoStore implements AlcampoStore {
             producer.send(session.createTextMessage(event.toString()));
         }
 
-        System.out.println(" Enviados " + products.size() + " productos al topic: " + topicName);
+        System.out.println(" Sent " + products.size() + " to topic: " + topicName);
         connection.close();
     }
 

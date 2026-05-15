@@ -1,5 +1,6 @@
 package org.ulpgc.codestormah.business;
 
+import org.ulpgc.codestormah.business.control.RecommendationStore;
 import org.ulpgc.codestormah.business.view.ApiController;
 import org.ulpgc.codestormah.business.control.ProductConsumer;
 import org.ulpgc.codestormah.business.control.EventProcessor;
@@ -19,7 +20,8 @@ public class Main {
         int apiPort = Integer.parseInt(args[3]);
 
         ProductStore productStore = new ProductStore();
-        EventProcessor processor = new EventProcessor(productStore);
+        RecommendationStore recommendationStore = new RecommendationStore(productStore);
+        EventProcessor processor = new EventProcessor(productStore, recommendationStore);
 
         System.out.println("⏳ Cargando histórico desde: " + eventStorePath);
         processor.loadHistoricalData(eventStorePath);
@@ -27,7 +29,7 @@ public class Main {
         ProductConsumer consumer = new ProductConsumer(brokerUrl, topicName, processor);
         consumer.start();
 
-        ApiController api = new ApiController(productStore, apiPort);
+        ApiController api = new ApiController(productStore, recommendationStore, apiPort);
         api.start();
 
         System.out.println("✅ Business Unit iniciada con éxito. Arquitectura Lambda activa.");

@@ -21,7 +21,6 @@ public class Product {
     public String getName() { return name; }
     public String getBrand() { return brand; }
     public String getCategory() { return category; }
-    public double getPrice() { return price; }
     public double getUnitPrice() { return unitPrice; }
     public String getUnit() { return unit; }
     public double getQuantity() { return quantity; }
