@@ -35,7 +35,7 @@ public class DatabaseAlcampoStore implements AlcampoStore {
 
             st.execute("CREATE TABLE IF NOT EXISTS prices (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, " +
-                    "price REAL, unit_price REAL, is_on_sale BOOLEAN, date TEXT DEFAULT (datetime('now')), " +
+                    "unit_price REAL, is_on_sale BOOLEAN, date TEXT DEFAULT (datetime('now')), " +
                     "FOREIGN KEY(product_id) REFERENCES products(id))");
         }
     }
@@ -58,13 +58,12 @@ public class DatabaseAlcampoStore implements AlcampoStore {
     }
 
     private void savePrices(List<Product> products, Connection conn) throws SQLException {
-        String sql = "INSERT INTO prices (product_id, price, unit_price, is_on_sale) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO prices (product_id, unit_price, is_on_sale) VALUES (?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (Product p : products) {
                 ps.setString(1, p.getId());
                 ps.setDouble(2, p.getUnitPrice());
-                ps.setDouble(3, p.getPricePerUnit());
-                ps.setBoolean(4, p.isOnSale());
+                ps.setBoolean(3, p.isOnSale());
                 ps.addBatch();
             }
             ps.executeBatch();

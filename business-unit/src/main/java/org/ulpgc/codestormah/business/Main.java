@@ -1,3 +1,5 @@
+package org.ulpgc.codestormah.business;
+
 import org.ulpgc.codestormah.business.view.ApiController;
 import org.ulpgc.codestormah.business.control.ProductConsumer;
 import org.ulpgc.codestormah.business.control.EventProcessor;

@@ -36,7 +36,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
 
     @Override
     public List<Product> fetchProducts() {
-        // Ahora devuelve un Map (Categoría -> Búsqueda)
         Map<String, String> categories = loadCategories();
         if (categories.isEmpty()) return new ArrayList<>();
 
@@ -63,7 +62,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
     }
 
     private void processAllCategories(WebDriver driver, Map<String, String> categories, Map<String, Product> products) {
-        // Iteramos sobre las claves (nombre de categoría) y valores (término de búsqueda)
         for (Map.Entry<String, String> entry : categories.entrySet()) {
             String categoryName = entry.getKey();
             String searchTerm = entry.getValue();
@@ -108,13 +106,13 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", bebidasLink);
             pause(700);
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", bebidasLink);
-            System.out.println("   ✅ Filtro 'Bebidas' aplicado.");
+            System.out.println("   ✅ Filter 'Drinks' applied.");
 
             wait.until(ExpectedConditions.urlContains("sublocationId"));
             wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("[data-test^='fop-wrapper']")));
             pause(1500);
         } catch (Exception e) {
-            System.out.println("   ❌ No se encontró el filtro de Bebidas");
+            System.out.println("   ❌ Drink filter does not found");
         }
     }
 
@@ -166,8 +164,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
     }
 
     private Product createProductFromElement(WebElement el, String name, String categoryName) {
-        double price = fetchPrice(el, "[data-test='fop-price']");
-        double unitPrice = fetchPrice(el, "[data-test='fop-price-per-unit']");
+        double unitPrice = fetchPrice(el, "[data-test='fop-price']");
         String sizeText = getElementText(el, "[data-test='fop-size'] span", "[data-test='fop-size']");
 
         String brand = extractBrand(name);
@@ -177,7 +174,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
 
         return new Product(
                 deterministicId, name, normalizedName,
-                brand, categoryName, price, unitPrice, parseUnit(sizeText),
+                brand, categoryName, unitPrice, parseUnit(sizeText),
                 parseQuantity(sizeText), isSale
         );
     }
@@ -224,7 +221,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
 
     private String parseUnit(String text) {
         String lower = text.toLowerCase();
-        if (lower.contains("ml") || lower.contains(" l") || lower.contains("litro")) return "L";
+        if (lower.contains("ml") || lower.contains(" l") || lower.contains("litro")) return "l";
         if (lower.contains("kg") || lower.contains("kilo")) return "kg";
         if (lower.matches(".*\\d\\s?g($|\\s).*") || lower.contains("gramo") || lower.endsWith("g")) return "g";
         return "ud";
