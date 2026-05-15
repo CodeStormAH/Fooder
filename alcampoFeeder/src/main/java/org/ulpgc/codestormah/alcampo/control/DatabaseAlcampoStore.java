@@ -62,8 +62,8 @@ public class DatabaseAlcampoStore implements AlcampoStore {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (Product p : products) {
                 ps.setString(1, p.getId());
-                ps.setDouble(2, p.getPrice());
-                ps.setDouble(3, p.getUnitPrice());
+                ps.setDouble(2, p.getUnitPrice());
+                ps.setDouble(3, p.getPricePerUnit());
                 ps.setBoolean(4, p.isOnSale());
                 ps.addBatch();
             }

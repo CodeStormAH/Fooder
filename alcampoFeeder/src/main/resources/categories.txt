@@ -4,8 +4,7 @@ sidra
 cava
 vino blanco
 vino tinto
-refresco de té
-refresco sin gas
+refresco de té y sin gas:refresco de té
 tónica
 bitter
 refresco de naranja
