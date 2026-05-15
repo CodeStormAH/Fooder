@@ -1,7 +1,6 @@
 package org.ulpgc.codestormah.business.control;
 
 import com.google.gson.Gson;
-import org.ulpgc.codestormah.business.model.Event;
 import org.ulpgc.codestormah.business.model.Product;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -19,12 +18,8 @@ public class EventProcessor {
 
     public void processJson(String json) {
         try {
-            Event event = gson.fromJson(json, Event.class);
-            if (event != null && event.getPayload() != null) {
-                Product product = event.getPayload();
-
-                product.setSource(event.getSs());
-
+            Product product = gson.fromJson(json, Product.class);
+            if (product != null && product.getId() != null) {
                 store.addProduct(product);
             }
         } catch (Exception e) {
