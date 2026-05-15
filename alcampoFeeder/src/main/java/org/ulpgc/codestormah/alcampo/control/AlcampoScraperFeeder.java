@@ -79,6 +79,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         navigateToHome(driver);
         acceptCookies(driver);
         performSearch(driver, searchTerm);
+        applyDrinksFilter(driver);
         extractCategoryProducts(driver, categoryName, products);
     }
 
@@ -95,6 +96,25 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             pause(SEARCH_WAIT_MS);
         } catch (Exception e) {
             System.err.println("Search error for '" + searchTerm + "': " + e.getMessage());
+        }
+    }
+
+    private void applyDrinksFilter(WebDriver driver) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(12));
+        try {
+            WebElement bebidasLink = wait.until(ExpectedConditions.presenceOfElementLocated(
+                    By.xpath("//a[@data-test='root-category-link' and contains(normalize-space(), 'Bebidas')]")
+            ));
+            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", bebidasLink);
+            pause(700);
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", bebidasLink);
+            System.out.println("   ✅ Filtro 'Bebidas' aplicado.");
+
+            wait.until(ExpectedConditions.urlContains("sublocationId"));
+            wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("[data-test^='fop-wrapper']")));
+            pause(1500);
+        } catch (Exception e) {
+            System.out.println("   ❌ No se encontró el filtro de Bebidas");
         }
     }
 
