@@ -39,11 +39,13 @@ public class ActiveMQAlcampoStore implements AlcampoStore {
 
         for (Product product : products) {
             JsonObject event = new JsonObject();
+
             event.addProperty("ts", Instant.now().toString());
             event.addProperty("ss", this.source);
-            event.add("payload", gson.toJsonTree(product));
-            TextMessage message = session.createTextMessage(event.toString());
-            producer.send(message);
+
+            gson.toJsonTree(product).getAsJsonObject().entrySet().forEach(e -> event.add(e.getKey(), e.getValue()));
+
+            producer.send(session.createTextMessage(event.toString()));
         }
 
         System.out.println(" Enviados " + products.size() + " productos al topic: " + topicName);
