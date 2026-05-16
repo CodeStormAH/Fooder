@@ -17,7 +17,14 @@ public class ApiController {
     }
 
     public void start() {
-        Javalin app = Javalin.create().start(port);
+        Javalin app = Javalin.create(config -> {
+            // Sintaxis para Javalin 5
+            config.plugins.enableCors(cors -> {
+                cors.add(it -> {
+                    it.anyHost();
+                });
+            });
+        }).start(port);
 
         app.get("/api/health", ctx -> ctx.result("Business Unit running"));
         app.get("/api/categories", ctx -> ctx.json(productStore.getCategories()));

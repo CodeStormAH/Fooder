@@ -19,6 +19,7 @@ public class Product {
     public String getSs() {return ss; }
     public String getId() { return id; }
     public String getName() { return name; }
+    public String getNormalizedName() {return normalizedName;}
     public String getBrand() { return brand; }
     public String getCategory() { return category; }
     public double getUnitPrice() { return unitPrice; }
