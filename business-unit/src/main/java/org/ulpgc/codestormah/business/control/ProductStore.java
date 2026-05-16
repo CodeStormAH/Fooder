@@ -50,6 +50,14 @@ public class ProductStore {
         return filtered;
     }
 
+    public List<Product> getAllProducts() {
+        return history.values().stream()
+                .filter(list -> !list.isEmpty())
+                .map(list -> list.get(list.size() - 1))
+                .sorted(priceComparator)
+                .toList();
+    }
+
     public Product getCheapestProduct(String category) {
         return getProductsByCategory(category).stream()
                 .findFirst()
