@@ -4,12 +4,12 @@ sidra
 cava
 vino blanco
 vino tinto
-refresco de té y sin gas:refresco de té
+refresco de té y sin gas:refrescos de té
 tónica
 bitter
-refresco de naranja
-refresco de limón
-refresco de cola
-isotónico:bebida isotónica
-energético:bebida energética
+refresco de naranja:refrescos de naranja
+refresco de limón:refrescos de limón
+refresco de cola:refrescos de cola
+isotónico:bebidas isotónicas
+energético:bebidas energéticas
 agua:agua sin gas
