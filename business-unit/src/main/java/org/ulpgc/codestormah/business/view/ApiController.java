@@ -29,8 +29,6 @@ public class ApiController {
             if (rec == null) ctx.status(404).result("Sin recomendación para esa categoría");
             else ctx.json(rec);
         });
-        app.get("/api/products", ctx ->
-                ctx.json(productStore.getAllProducts()));
         app.get("/api/history/{source}/{id}", ctx -> ctx.json(productStore.getProductHistory(ctx.pathParam("id"), ctx.pathParam("source"))));
 
         System.out.println("🚀 API REST iniciada en http://localhost:" + port);
