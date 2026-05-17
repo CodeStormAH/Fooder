@@ -3,13 +3,18 @@ package org.ulpgc.codestormah.alcampo.control;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.ulpgc.codestormah.alcampo.model.Product;
 
 import javax.jms.*;
-import java.util.List;
 import java.time.Instant;
+import java.util.List;
 
 public class ActiveMQAlcampoStore implements AlcampoStore {
+
+    private static final Logger logger = LoggerFactory.getLogger(ActiveMQAlcampoStore.class);
+
     private final String brokerUrl;
     private final String topicName;
     private final String source;
@@ -26,7 +31,7 @@ public class ActiveMQAlcampoStore implements AlcampoStore {
         try {
             publishToTopic(products);
         } catch (JMSException e) {
-            System.err.println("Error enviando a ActiveMQ: " + e.getMessage());
+            logger.error("Error enviando a ActiveMQ: {}", e.getMessage(), e);
         }
     }
 
@@ -43,12 +48,16 @@ public class ActiveMQAlcampoStore implements AlcampoStore {
             event.addProperty("ts", Instant.now().toString());
             event.addProperty("ss", this.source);
 
-            gson.toJsonTree(product).getAsJsonObject().entrySet().forEach(e -> event.add(e.getKey(), e.getValue()));
+            gson.toJsonTree(product)
+                    .getAsJsonObject()
+                    .entrySet()
+                    .forEach(e -> event.add(e.getKey(), e.getValue()));
 
             producer.send(session.createTextMessage(event.toString()));
         }
 
-        System.out.println(" Sent " + products.size() + " to topic: " + topicName);
+        logger.info("Sent {} to topic: {}", products.size(), topicName);
+
         connection.close();
     }
 

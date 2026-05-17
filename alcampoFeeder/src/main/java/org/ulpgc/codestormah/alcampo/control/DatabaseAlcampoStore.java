@@ -1,11 +1,16 @@
 package org.ulpgc.codestormah.alcampo.control;
 
 import org.ulpgc.codestormah.alcampo.model.Product;
+
 import java.io.File;
 import java.sql.*;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DatabaseAlcampoStore implements AlcampoStore {
+
+    private static final Logger LOGGER = Logger.getLogger(DatabaseAlcampoStore.class.getName());
 
     private final String jdbcUrl;
 
@@ -21,9 +26,11 @@ public class DatabaseAlcampoStore implements AlcampoStore {
             saveProducts(products, conn);
             savePrices(products, conn);
             conn.commit();
-            System.out.println("Almacenados " + products.size() + " productos y precios en: " + this.jdbcUrl);
+
+            LOGGER.info("Almacenados " + products.size() + " productos y precios en: " + this.jdbcUrl);
+
         } catch (SQLException e) {
-            System.err.println("Error almacenando datos: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Error almacenando datos: " + e.getMessage(), e);
         }
     }
 

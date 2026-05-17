@@ -6,8 +6,12 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AlcampoController {
+    private static final Logger logger = Logger.getLogger(AlcampoController.class.getName());
+
     private final AlcampoFeeder feeder;
     private final AlcampoStore store;
 
@@ -24,7 +28,8 @@ public class AlcampoController {
                     try {
                         execute();
                     } catch (Exception e) {
-                        System.err.println("Error during scheduled execution: " + e.getMessage());
+                        logger.log(Level.SEVERE,
+                                "Error during scheduled execution: " + e.getMessage(), e);
                     }
                 },
                 initialDelay,
@@ -34,15 +39,15 @@ public class AlcampoController {
     }
 
     public void execute() {
-        System.out.println("Starting Alcampo data collection...");
+        logger.info("Starting Alcampo data collection...");
         List<Product> products = feeder.fetchProducts();
 
         if (!products.isEmpty()) {
-            System.out.println("Collected " + products.size() + " products. Storing data...");
+            logger.info("Collected " + products.size() + " products. Storing data...");
             store.store(products);
-            System.out.println("Done!");
+            logger.info("Done!");
         } else {
-            System.out.println("No data collected.");
+            logger.info("No data collected.");
         }
     }
 }

@@ -1,11 +1,7 @@
 package org.ulpgc.codestormah.alcampo.control;
 
 import org.ulpgc.codestormah.alcampo.model.Product;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -16,14 +12,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AlcampoScraperFeeder implements AlcampoFeeder {
+
+    private static final Logger logger = Logger.getLogger(AlcampoScraperFeeder.class.getName());
+
     private final String baseUrl;
     private final String categoriesPath;
     private static final int SEARCH_WAIT_MS = 4000;
@@ -68,7 +65,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
 
             if (categoryName.isBlank() || searchTerm.isBlank()) continue;
 
-            System.out.println("Searching for: '" + searchTerm + "' (Saving as Category: '" + categoryName + "')");
+            logger.info("Searching for: '" + searchTerm + "' (Saving as Category: '" + categoryName + "')");
             scrapeCategory(driver, categoryName, searchTerm, products);
         }
     }
@@ -92,8 +89,10 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             searchBar.sendKeys(searchTerm);
             searchBar.sendKeys(Keys.ENTER);
             pause(SEARCH_WAIT_MS);
+
         } catch (Exception e) {
-            System.err.println("Search error for '" + searchTerm + "': " + e.getMessage());
+            logger.log(Level.SEVERE,
+                    "Search error for '" + searchTerm + "': " + e.getMessage(), e);
         }
     }
 
@@ -103,16 +102,21 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             WebElement bebidasLink = wait.until(ExpectedConditions.presenceOfElementLocated(
                     By.xpath("//a[@data-test='root-category-link' and contains(normalize-space(), 'Bebidas')]")
             ));
-            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", bebidasLink);
+
+            ((JavascriptExecutor) driver)
+                    .executeScript("arguments[0].scrollIntoView({block: 'center'});", bebidasLink);
+
             pause(700);
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", bebidasLink);
-            System.out.println("   ✅ Filter 'Drinks' applied.");
+
+            logger.info("Filter 'Drinks' applied.");
 
             wait.until(ExpectedConditions.urlContains("sublocationId"));
             wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("[data-test^='fop-wrapper']")));
             pause(1500);
+
         } catch (Exception e) {
-            System.out.println("   ❌ Drink filter does not found");
+            logger.warning("Drink filter does not found");
         }
     }
 
@@ -135,7 +139,8 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                 lastCount = currentCategoryCount;
             }
         }
-        System.out.println("   Finished category '" + categoryName + "' (" + currentCategoryCount + " products)");
+
+        logger.info("Finished category '" + categoryName + "' (" + currentCategoryCount + " products)");
     }
 
     private int scanPageForProducts(WebDriver driver, String categoryName, Map<String, Product> products, int currentCount) {
@@ -174,7 +179,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         double unitPrice = fetchPrice(el, "[data-test='fop-price']");
         String sizeText = getElementText(el, "[data-test='fop-size'] span", "[data-test='fop-size']");
 
-        // Si sizeText no contiene unidad de volumen real, extraerla del nombre
         if (!sizeText.toLowerCase().matches(".*\\d.*(ml|cl|\\bl\\b|litro|kg|gramo).*")) {
             sizeText = extractSizeFromName(name);
         }
@@ -276,7 +280,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Critical error reading categories file: " + e.getMessage());
+            logger.severe("Critical error reading categories file: " + e.getMessage());
         }
         return categoryMap;
     }
