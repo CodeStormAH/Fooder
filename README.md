@@ -228,3 +228,110 @@ Una vez visto toda la información disponible, queda por ver una función muy ú
 
 Una vez visto todo esto, ya tendría perfecto conocimiento sobre nuestra APP.
 
+
+## Arquitectura del Sistema y de la Aplicación
+
+El sistema se ha diseñado siguiendo un enfoque modular, desacoplado y guiado por eventos, estructurado bajo el paradigma de una **Arquitectura Lambda** híbrida para combinar el procesamiento de datos históricos con la ingesta en tiempo real.
+
+### 1. Arquitectura del Sistema
+
+La topología del sistema se divide en tres capas fundamentales que garantizan la consistencia y la baja latencia en la entrega de la información:
+
+* **Capa Batch (Histórica):** Representada por el almacenamiento persistente inmutable (`event-store`). Al arrancar la Unidad de Negocio, el componente `EventProcessor` realiza un volcado secuencial leyendo todos los archivos con extensión `.events` del directorio local. Esto reconstruye el estado maestro del Datamart a partir de la secuencia histórica de hechos.
+* **Capa Speed (Tiempo Real):** Diseñada para capturar los deltas y las actualizaciones instantáneas del mercado. Los módulos **Feeders** (Mercadona y Alcampo) extraen los datos de forma independiente y los publican inmediatamente en un Topic centralizado de **Apache ActiveMQ**. La Unidad de Negocio actúa como un consumidor permanente gracias a una **Suscripción Duradera**, procesando e integrando cada evento JSON en el Datamart en el mismo milisegundo en que se genera.
+* **Capa Serving (Servicio):** Encargada de exponer las vistas materiales resultantes de la unión de la capa batch y la capa speed. Se implementa mediante un servidor HTTP embebido con **Javalin**, permitiendo a clientes externos (como interfaces Front-End o herramientas de analítica) consumir consultas complejas y precalculadas con un coste temporal mínimo.
+
+<img width="1828" height="407" alt="image 2" src="https://github.com/user-attachments/assets/c89609b5-dc31-4dd4-bc29-540f75fd5b6e" />
+
+
+### Arquitectura de la Aplicación (Estructura de Módulos)
+
+El sistema está desarrollado como un proyecto multimódulo gestionado por Maven. Esta separación física garantiza un desacoplamiento absoluto de responsabilidades, facilitando la mantenibilidad y permitiendo que cada componente escale de forma independiente. A continuación, se detalla la organización interna de las clases y paquetes de cada módulo del repositorio:
+
+#### 1. Módulo: alcampoFeeder
+
+Este componente se encarga exclusivamente de la captura y extracción automatizada de datos desde la plataforma web de Alcampo utilizando técnicas de Web Scraping dinámico.
+
+* **org.ulpgc.codestormah.alcampo**
+* `Main`: Punto de entrada que inicializa las configuraciones de ruta y arranca el ciclo de vida de la extracción.
+
+
+* **org.ulpgc.codestormah.alcampo.control**
+* `AlcampoFeeder`: Interfaz que define los métodos abstractos y el contrato de comportamiento para cualquier alimentador de datos de Alcampo.
+* `AlcampoScraperFeeder`: Implementación concreta encargada de interactuar con la API de Selenium WebDriver. Gestiona la inicialización del navegador Chrome, la aceptación del banner de cookies, el scroll automático para la carga perezosa y la lectura del DOM.
+* `AlcampoController`: Componente de orquestación que controla la lógica de negocio del feeder, secuenciando el recorrido de las categorías.
+* `AlcampoStore` / `DatabaseAlcampoStore`: Interfaces y abstracciones diseñadas para gestionar la persistencia y la salida del flujo de datos de los artículos procesados localmente.
+* `ActiveMQAlcampoStore`: Componente encargado de abrir la conexión con Apache ActiveMQ para transformar los objetos a texto JSON y publicarlos directamente en el Topic correspondiente.
+
+
+* **org.ulpgc.codestormah.alcampo.model**
+* `Product`: Modelo de datos interno que representa la estructura base del producto capturado en el contexto de Alcampo.
+
+##<img width="1320" height="753" alt="Alcampo" src="https://github.com/user-attachments/assets/e0f37d0b-1f38-4c29-8e82-d97f62672914" />
+
+#### 2. Módulo: mercadonaFeeder
+
+Componente optimizado para la ingesta de datos a gran velocidad mediante el consumo directo de la API estructurada interna de Mercadona.
+
+* **org.ulpgc.codestormah.mercadona**
+* `Main`: Inicializa el controlador y lanza las peticiones concurrentes de ingesta.
+
+
+* **org.ulpgc.codestormah.mercadona.config**
+* `CategoryLoader`: Clase de utilidad encargada de leer y parsear el archivo de recursos `categories.json` para inyectar la lista de identificadores oficiales de las categorías a consultar en la API.
+
+
+* **org.ulpgc.codestormah.mercadona.controller**
+* `ProductFeeder` / `MercadonaFeeder`: Componentes encargados de realizar las llamadas HTTP asíncronas hacia los endpoints de Mercadona y capturar los payloads JSON nativos.
+* `Controller`: Coordina el flujo principal del módulo, tomando las categorías cargadas, procesando las respuestas de la API y enviándolas al bróker.
+* `ProductStore` / `DatabaseProductStore`: Gestionan el almacenamiento intermedio o la canalización de los objetos de catálogo capturados.
+* `ActiveMQFactory`: Factoría encargada de centralizar, configurar y proveer conexiones eficientes hacia las colas de mensajería de ActiveMQ.
+
+
+* **org.ulpgc.codestormah.mercadona.model**
+* `Product`: Modelo orientado al dominio que mapea las propiedades nativas de la API de Mercadona.
+* `ProductTextProcessor`: Utilidad complementaria que limpia, formatea y normaliza las cadenas de caracteres de los nombres y marcas del supermercado.
+
+
+<img width="1467" height="738" alt="mercadona" src="https://github.com/user-attachments/assets/d6bc7ff7-ac9d-4fae-8135-8abc5fccc541" />
+
+
+#### 3. Módulo: eventStoreBuilder
+
+Este módulo funciona de manera autónoma y aislada de la lógica analítica. Su única responsabilidad es actuar como el sumidero inmutable de la arquitectura, garantizando que ningún evento se pierda.
+
+* **org.ulpgc.codestormah.eventstore**
+* `Main`: Levanta el demonio de escucha persistente para el almacenamiento de eventos.
+
+
+* **org.ulpgc.codestormah.eventstore.control**
+* `ActiveMQSubscriber`: Actúa como un oyente permanente conectado a los Topics de ActiveMQ. Recibe de forma asíncrona cada mensaje de texto JSON emitido por cualquiera de los feeders activos.
+* `FileEventStore`: Componente encargado de la persistencia física en disco. Toma las cadenas JSON crudas y realiza una operación inmutable de adición de líneas (append) sobre archivos locales con extensión `.events`, conformando el registro maestro histórico del sistema.
+
+<img width="1150" height="481" alt="EventStore" src="https://github.com/user-attachments/assets/68649138-69ea-4a40-b3d5-7301d02df80f" />
+
+#### 4. Módulo: business-unit
+
+Es el núcleo inteligente del sistema (Unidad de Negocio). Se encarga de procesar los datos históricos (Batch) y en tiempo real (Speed), administrar el Datamart en memoria de alta concurrencia y servir las consultas mediante una interfaz HTTP pública.
+
+* **org.ulpgc.codestormah.business**
+* `Main`: Punto de inicio del sistema central. Valida los 4 argumentos de la línea de comandos, ordena la reconstrucción del histórico a través del procesador, arranca el consumidor JMS de tiempo real y levanta la API de Javalin.
+
+
+* **org.ulpgc.codestormah.business.control**
+* `EventProcessor`: Componente centralizador del flujo analítico. Utiliza una instancia de `Gson` para deserializar las cadenas JSON en objetos de tipo `Product`. Contiene el método `loadHistoricalData` para escanear recursivamente carpetas mediante flujos de archivos (`Files.walk` y `Files.lines`) e inyectar el histórico al arrancar, además de `processJson` para procesar el tiempo real y forzar el recálculo analítico inmediato de la categoría afectada.
+* `ProductConsumer`: Configura un cliente JMS clásico sobre ActiveMQ con un identificador de cliente fijo (`"BusinessUnit_API_Client"`). Utiliza el método `createDurableSubscriber` bajo el nombre `"BusinessUnit_Sub"`, garantizando la tolerancia a fallos: si la unidad de negocio se detiene, el bróker almacena los eventos acumulados de la capa speed hasta que el consumidor se reactive.
+* `ProductStore`: Gestiona el Datamart maestro indexado por un `ConcurrentHashMap` seguro para hilos, cuyos valores son listas de tipo `CopyOnWriteArrayList` para evitar condiciones de carrera. Expone métodos de consulta optimizados como `getProductsByCategory` (que extrae la última actualización de cada producto y la devuelve ordenada ascendentemente por precio a través de un comparador encadenado), `getCheapestProduct`, `getMostExpensiveProduct` y el filtrado del historial compactado sin ruido en `getProductHistory`.
+* `RecommendationStore`: Mantiene la vista materializada precalculada de las recomendaciones de compra en un `ConcurrentHashMap`. Al invocar su método `update`, agrupa dinámicamente los productos de la categoría por su origen (`Product::getSs`), calcula las estadísticas de precios con `DoubleSummaryStatistics` para obtener las medias aritméticas y determina de forma asíncrona qué supermercado ofrece el mayor ahorro global.
+
+
+* **org.ulpgc.codestormah.business.model**
+* `Product`: Objeto de dominio unificado que cohesiona los catálogos unificando propiedades críticas (marca, categoría, precio unitario, timestamps y estados de oferta).
+* `Recommendation`: Modelo que estructura la respuesta analítica precalculada final (supermercado recomendado, producto más barato, precio unitario y la comparativa de medias del mercado).
+
+
+* **org.ulpgc.codestormah.business.view**
+* `ApiController`: Define e inicializa el servidor HTTP embebido utilizando **Javalin 5**. Configura el plugin de CORS nativo mediante `config.plugins.enableCors` otorgando permisos de acceso a cualquier cliente web externo (`anyHost()`). Mapea de forma limpia los verbos HTTP `GET` hacia las funciones atómicas del `ProductStore` y del `RecommendationStore`, gestionando los códigos de estado HTTP (como el `404 Not Found`).
+
+<img width="1303" height="878" alt="Bussines-unit" src="https://github.com/user-attachments/assets/7f002b17-e0b8-4153-a99b-89aa3808763b" />
+
