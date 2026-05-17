@@ -156,5 +156,53 @@ La Unidad de Negocio expone una API HTTP pública a través de **Javalin** para 
 ### 1. Verificación del Estado del Sistema (Health Check)
 Comprueba de manera rápida si el servidor HTTP está levantado y respondiendo peticiones.
 * **Endpoint:** `GET /api/health`
-* **Ejemplo de consulta:**
-  ``` http://localhost:7000/api/health```
+* **Ejemplo de consulta (buscador de explorador web):**
+  `http://localhost:7000/api/health`
+* **Respuesta:** `Business Unit running`
+
+### 2. Listar Categorías Disponibles
+Devuelve un conjunto único con todas las categorías de productos que el sistema ha procesado hasta el momento (tanto del histórico como de la capa de tiempo real).
+* **Endpoint:** `GET /api/categories`
+* **Ejemplo de consulta (buscador de explorador web):**
+  `http://localhost:7000/api/categories`
+* **Respuesta:** `["licores","refresco de naranja","cerveza","vino tinto","cava","refresco de té y sin gas","bitter","energético","refresco de limón","sidra","isotónico","vino blanco","refresco de cola","tónica","agua"]`
+
+### 3. Obtener Productos por Categoría
+Devuelve la lista completa de todos los productos pertenecientes a una categoría específica. La respuesta contiene únicamente la última actualización conocida de cada artículo y el listado se encuentra ordenado ascendentemente por precio unitario.
+* **Endpoint:** `GET /api/products/{category}`
+* **Ejemplo de consulta (buscador de explorador web):**
+  `http://localhost:7000/api/products/licores`
+* **Respuesta:** `[{"ts":"2026-05-17T13:22:26.626732Z","ss":"alcampo","id":"310fa12a-1a2a-39c5-8724-01241d69dc1e","name":"RUAVIEJA Cremosa light Licor de crema de orujo con un 60% menos de azÃºcar botella 5 cl.","normalizedName":"cremosa light licor de crema de orujo con un % menos de azÃºcar botella","brand":"RUAVIEJA","category":"licores","unitPrice":1.0,"unit":"l","quantity":0.05,"onSale":true},{"ts":"2026-05-17T13:22:29.220273Z","ss":"alcampo","id":"41000454-2ac3-32bb-8fed-145bbaf831e5","name":"PANIZO Licor de crema de orujo botella 5 cl.","normalizedName":"licor de crema de orujo botella","brand":"PANIZO","category":"licores","unitPrice":1.0,"unit":"l","quantity":0.05,"onSale":true}...`
+
+### 4. Obtener el Producto Más Barato de una Categoría
+Filtra la categoría seleccionada y extrae directamente el artículo con el menor precio del mercado actual.
+* **Endpoint:** `GET /api/products/{category}/cheapest`
+* **Ejemplo de consulta (buscador de explorador web):**
+  `http://localhost:8080/api/products/licores/cheapest`
+* **Respuesta:** `{"ts":"2026-05-17T13:22:26.626732Z","ss":"alcampo","id":"310fa12a-1a2a-39c5-8724-01241d69dc1e","name":"RUAVIEJA Cremosa light Licor de crema de orujo con un 60% menos de azÃºcar botella 5 cl.","normalizedName":"cremosa light licor de crema de orujo con un % menos de azÃºcar botella","brand":"RUAVIEJA","category":"licores","unitPrice":1.0,"unit":"l","quantity":0.05,"onSale":true}`
+
+### 5. Obtener el Producto Más Caro de una Categoría
+Extrae el artículo con el mayor precio unitario dentro de la categoría proporcionada.
+* **Endpoint:** `GET /api/products/{category}/expensive`
+* **Ejemplo de consulta (buscador de explorador web):**
+  `http://localhost:8080/api/products/licores/expensive`
+* **Respuesta:** `{"ts":"2026-05-17T13:25:34.3476878","ss":"mercadona","id":"28630","name":"Whisky escocÃ©s Black Label Johnnie Walker","normalizedName":"whisky escocÃ©s black label johnnie walker","brand":"Other","category":"licores","unitPrice":28.9,"unit":"l","quantity":0.7,"onSale":false}`
+
+### 6. Recomendación de Compra Inteligente por Categoría
+Consulta la vista materializada precalculada de recomendaciones. Este endpoint devuelve cuál es el supermercado idóneo para comprar globalmente esa categoría (basándose en la media aritmética de todos sus artículos), indica el producto más barato absoluto del momento y adjunta una comparativa de medias.
+* **Endpoint:** `GET /api/recommendation/{category}`
+* **Ejemplo de consulta (buscador de explorador web):**
+  `http://localhost:7000/api/recommendation/licores`
+* **Respuesta:** `{"category":"licores","recommendedSource":"mercadona","cheapestProductName":"RUAVIEJA Cremosa light Licor de crema de orujo con un 60% menos de azÃºcar botella 5 cl.","cheapestUnitPrice":1.0,"cheapestSource":"alcampo","comparison":{"mercadona":"9.21 € de media","alcampo":"10.31 € de media"}}`
+
+### 7. Historial de Fluctuación de un Producto (Compactado)
+Rastrea la evolución temporal de tarifas para un artículo concreto. Gracias al algoritmo de filtrado de ruido implementado en la lógica del negocio, este endpoint omite lecturas consecutivas idénticas, retornando únicamente los eventos cronológicos donde hubo un cambio real de precio o de estado de oferta.
+* **Endpoint:** `GET /api/history/{source}/{id}`
+* **Ejemplo de consulta (buscador de explorador web):**
+  `http://localhost:7000/api/history/mercadona/21694`
+* **Respuesta:** `[{"ts":"2026-05-17T13:25:34.3949769","ss":"mercadona","id":"21694","name":"Bebida preparada de vodka sabor maracuyÃ¡ Knebep Passion fruit","normalizedName":"bebida preparada de vodka sabor maracuyÃ¡ knebep passion fruit","brand":"Other","category":"licores","unitPrice":1.3,"unit":"l","quantity":0.275,"onSale":false}]` (solo hay un precio porque no se ha registrado ninguno distinto para ese producto)
+
+
+
+
+
