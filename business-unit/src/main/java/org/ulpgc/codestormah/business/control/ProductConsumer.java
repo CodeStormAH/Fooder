@@ -33,7 +33,7 @@ public class ProductConsumer {
                 try {
                     if (message instanceof TextMessage) {
                         String json = ((TextMessage) message).getText();
-                        processor.processJson(json); // Delegamos el trabajo al procesador unificado
+                        processor.processJson(json);
                     }
                 } catch (Exception e) { e.printStackTrace(); }
             });

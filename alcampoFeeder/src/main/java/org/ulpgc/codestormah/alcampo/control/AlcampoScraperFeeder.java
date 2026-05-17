@@ -163,9 +163,21 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         }
     }
 
+    private String extractSizeFromName(String name) {
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("(\\d+[,.]?\\d*)\\s*(ml|cl|litros?|\\bl\\b)", java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(name);
+        return m.find() ? m.group() : "";
+    }
+
     private Product createProductFromElement(WebElement el, String name, String categoryName) {
         double unitPrice = fetchPrice(el, "[data-test='fop-price']");
         String sizeText = getElementText(el, "[data-test='fop-size'] span", "[data-test='fop-size']");
+
+        // Si sizeText no contiene unidad de volumen real, extraerla del nombre
+        if (!sizeText.toLowerCase().matches(".*\\d.*(ml|cl|\\bl\\b|litro|kg|gramo).*")) {
+            sizeText = extractSizeFromName(name);
+        }
 
         String brand = extractBrand(name);
         String normalizedName = cleanName(name, brand);
@@ -213,7 +225,10 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         if (text == null || text.isEmpty()) return 1.0;
         try {
             double val = Double.parseDouble(text.replaceAll("[^0-9,.]", "").replace(",", "."));
-            return text.toLowerCase().contains("ml") ? val / 1000.0 : val;
+            String lower = text.toLowerCase();
+            if (lower.contains("ml")) return val / 1000.0;
+            if (lower.contains("cl")) return val / 100.0;
+            return val;
         } catch (Exception e) {
             return 1.0;
         }
@@ -221,7 +236,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
 
     private String parseUnit(String text) {
         String lower = text.toLowerCase();
-        if (lower.contains("ml") || lower.contains(" l") || lower.contains("litro")) return "l";
+        if (lower.contains("ml") || lower.contains("cl") || lower.contains(" l") || lower.contains("litro")) return "l";
         if (lower.contains("kg") || lower.contains("kilo")) return "kg";
         if (lower.matches(".*\\d\\s?g($|\\s).*") || lower.contains("gramo") || lower.endsWith("g")) return "g";
         return "ud";

@@ -23,7 +23,7 @@ public class EventProcessor {
             Product product = gson.fromJson(json, Product.class);
             if (product != null && product.getId() != null) {
                 productStore.addProduct(product);
-                recommendationStore.update(product.getCategory()); // recálculo inmediato
+                recommendationStore.update(product.getCategory());
             }
         } catch (Exception e) {
             System.err.println("Error parseando JSON: " + e.getMessage());
