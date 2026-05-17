@@ -215,7 +215,7 @@ Al entrar a la página, tendremos que selccionar el desplegable de categorías. 
 <img width="1680" height="1050" alt="Captura de Pantalla 2026-05-17 a las 18 00 45" src="https://github.com/user-attachments/assets/96fea511-284d-41b5-bc5b-09907b733bb1" />
 
 #### 2. Información contenida en la categoría
-Se muestran los productos en ordenados por precios de menor a mayor. Al principio de la página encontrarás la recomendación de esa categoría, indicándote el mejor supermercado según la media calculada con los precios de los productos de ambas fuentes. Además, se muestra también el producto más barato y el cálculo de la media para que usted pueda comprobarlo. El producto más caro, en el caso de que lo quiera consultar, lo encontrará al final de la página. También puede hacer uso de la barra de búsqueda si está interesado en buscar un producto o marca en concreto.
+Se muestran los productos ordenados por precios de menor a mayor. Al principio de la página encontrarás la recomendación de esa categoría, indicándote el mejor supermercado según la media calculada con los precios de los productos de ambas fuentes. Además, se muestra también el producto más barato y el cálculo de la media para que usted pueda comprobarlo. El producto más caro, en el caso de que lo quiera consultar, lo encontrará al final de la página. También puede hacer uso de la barra de búsqueda si está interesado en buscar un producto o marca en concreto.
 
 <img width="1680" height="1050" alt="Captura de Pantalla 2026-05-17 a las 18 04 26" src="https://github.com/user-attachments/assets/b223ef03-98fd-4a90-b059-02808b657c74" />
 
