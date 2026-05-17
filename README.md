@@ -71,3 +71,82 @@ Por ello, el sistema aplica el patrón de vistas materializadas a través de `Re
   - En su lugar, se mantienen precalculadas en un mapa estático. Cada vez que llega un evento en tiempo real, el `EventProcessor` invoca un recálculo asíncrono puntual de la categoría afectada (`recommendationStore.update`).
 
   - Como resultado, el endpoint de recomendaciones opera con una complejidad temporal de `O(1)`, ofreciendo respuestas instantáneas en milisegundos.
+
+## Instrucciones de Compilación y Ejecución
+
+Esta sección detalla los pasos necesarios para configurar el entorno, compilar el proyecto modular mediante Maven y ejecutar secuencialmente cada uno de los componentes del sistema.
+
+**Requisitos Previos**
+
+Antes de proceder, asegúrate de tener instaladas y configuradas las siguientes herramientas en tu sistema operativo:
+
+**Java Development Kit (JDK)**: Versión 21 o superior.
+
+**Apache Maven**: Versión 3.8 o superior para la gestión de dependencias y compilación.
+
+**Apache ActiveMQ**: Servidor de mensajería (Classic) versión 5.x o superior.
+
+**Google Chrome & ChromeDriver**: Necesarios para el correcto funcionamiento del scraper de Alcampo. Asegúrate de que la versión de chromedriver coincida exactamente con la versión de tu navegador Chrome instalado.
+
+**Variables de Entorno**: Configura correctamente JAVA_HOME y M2_HOME en tu sistema.
+
+**Configuración e Inicialización del Entorno**
+
+1. **Iniciar el Bróker de Mensajería (Apache ActiveMQ)**
+
+El sistema requiere que el servidor de mensajería esté activo antes de lanzar los módulos para permitir la creación del Topic y gestionar las suscripciones duraderas.
+
+En Linux/macOS:
+
+Bash
+`cd /ruta/hacia/apache-activemq/bin
+./activemq start`
+
+En Windows:
+
+DOS
+`cd C:\ruta\hacia\apache-activemq\bin
+activemq start`
+
+Nota: Puedes verificar que está corriendo accediendo a la consola web en `http://localhost:8161` (credenciales por defecto: admin / admin).
+
+2. **Preparar los Directorios de Datos**
+
+Crea una carpeta local en tu máquina que servirá como el almacenamiento histórico de eventos (event-store). El sistema leerá los archivos con extensión .events de esta ruta al iniciar.
+
+Bash
+`mkdir event-store`
+
+
+3. **Ejecución de los módulos**
+
+Para ejecutar los respectivos módulos, hace falta introducir una serie de variables las cuales especificamos a continuación:
+
+- Módulo `alcampoFeeder`:
+  - URL de Alcampo: `"https://www.compraonline.alcampo.es/categories?source=navigation"`
+  - Direcotorio del fichero de categorías: `"/Users/macbookpro/IdeaProjects/Fooder/alcampoFeeder/src/main/resources/categories.txt"` (ejemplo)
+  - URL para el broker: `"tcp://localhost:61616"`
+  - Nombre del topic: `"comparison.Product"`
+  - Nombre de la fuente: `"alcampo"`
+ 
+- Módulo `mercadonaFeeder`:
+  - URL de Mercadona: `"https://tienda.mercadona.es/"`
+  - Dirección de la API interna: `"/api/categories/"`
+  - Directorio del fichero de categorías: `"C:\Users\abelc\Documents\Universidad 25-26\Segundo Cuatrimestre\DACD\Intellij\Fooder\mercadonaFeeder\src\main\resources\categories.json"`(ejepmlo)
+  - URL para el broker: `"tcp://localhost:61616"`
+  - Nombre del topic: `"comparison.Product"`
+  - Nombre de la fuente: `"mercadona"`
+
+- Módulo `eventStoreBuilder`:
+  - URL para el broker: `"tcp://localhost:61616"`
+  - Nombre del topic: `"comparison.Product"`
+  - Nombre de la fuente (según el feeder que quieras mandar): `"alcampo"` o `"mercadona"`
+  - Nombre del paquete para guardar los eventos: `"eventstore"`
+ 
+- Módulo `bussines-unit:
+  - URL para el broker: `"tcp://localhost:61616"`
+  - Nombre del topic: `"comparison.Product"`
+  - Directorio de la carpeta de eventos: `"/Users/macbookpro/IdeaProjects/Fooder/eventstore"`(ejemplo)
+  - Puerto de la API: `7000`
+
+
