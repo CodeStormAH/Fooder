@@ -45,3 +45,29 @@ Para el procesamiento y la exposición del Datamart, se seleccionaron componente
 
 - **Gson** (Google): Utilizado como motor de parseo por su alta velocidad para transformar instantáneamente los JSON crudos recibidos en objetos de tipo Product.
 
+
+El Datamart en memoria se ha diseñado bajo los principios de baja latencia de lectura y alta concurrencia hilos, estructurado principalmente en dos almacenes independientes pero coordinados: `ProductStore` y `RecommendationStore`.
+
+1. **Tratamiento de la Concurrencia (Thread-Safety)**
+
+Dado que el bróker de mensajería inyecta datos constantemente a través de un hilo asíncrono (`ProductConsumer`), mientras que múltiples usuarios pueden realizar peticiones HTTP simultáneas a la API REST, el Datamart mitiga condiciones de carrera mediante estructuras no bloqueantes:
+
+- `ConcurrentHashMap`: Utilizado en ambos almacenes para indexar los productos y las recomendaciones por clave única sin necesidad de bloquear toda la tabla en operaciones de lectura.
+
+- `CopyOnWriteArrayList`: Utilizado en el historial de cada producto. Permite añadir nuevas actualizaciones de precios de forma segura mientras otros hilos leen la lista de manera consistente, evitando lanzar excepciones de tipo ConcurrentModificationException.
+
+2. **Compactación Dinámica del Historial (Filtrado de Ruido)**
+
+Los scrapers tienden a reenviar la información de un producto de manera periódica, incluso si su precio no ha cambiado, lo que saturaría la memoria con información redundante.
+Para solucionarlo, el método `getProductHistory` implementa un algoritmo de compactación en tiempo de lectura que recorre la línea temporal del artículo y elimina registros consecutivos con precios idénticos. De este modo, la API solo devuelve los puntos exactos en el tiempo donde ocurrió una fluctuación real de valor o un cambio en el estado de oferta (on sale), ahorrando memoria y optimizando el payload JSON de transferencia.
+
+3. **Precalculación Eficiente de Recomendaciones (Vistas Materializadas)**
+
+Calcular las estadísticas del mercado (medias de precios por supermercado, producto más barato, etc.) en cada petición REST sería computacionalmente inviable ante miles de usuarios simultáneos.
+Por ello, el sistema aplica el patrón de vistas materializadas a través de `RecommendationStore`:
+
+  - Las recomendaciones no se calculan al consultar la API.
+
+  - En su lugar, se mantienen precalculadas en un mapa estático. Cada vez que llega un evento en tiempo real, el `EventProcessor` invoca un recálculo asíncrono puntual de la categoría afectada (`recommendationStore.update`).
+
+  - Como resultado, el endpoint de recomendaciones opera con una complejidad temporal de `O(1)`, ofreciendo respuestas instantáneas en milisegundos.
