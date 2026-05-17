@@ -110,9 +110,9 @@ public class MercadonaFeeder implements ProductFeeder {
                 yield null;
             }
 
-            case "refresco de naranja y limón" -> {
-                if (productName.contains("Refresco de naranja")) yield "refresco de naranja";
-                if (productName.contains("Refresco de limón")) yield "refresco de limón";
+            case "refresco de naranja y de limón" -> {
+                if (productName.contains("naranja")) yield "refresco de naranja";
+                if (productName.contains("limón")) yield "refresco de limón";
                 yield null;
             }
 
