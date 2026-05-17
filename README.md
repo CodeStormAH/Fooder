@@ -267,7 +267,8 @@ Este componente se encarga exclusivamente de la captura y extracción automatiza
 * **org.ulpgc.codestormah.alcampo.model**
 * `Product`: Modelo de datos interno que representa la estructura base del producto capturado en el contexto de Alcampo.
 
-##<img width="1320" height="753" alt="Alcampo" src="https://github.com/user-attachments/assets/e0f37d0b-1f38-4c29-8e82-d97f62672914" />
+<img width="1471" height="744" alt="alcamposi" src="https://github.com/user-attachments/assets/bd643d66-345f-410a-8e82-52300a179dce" />
+
 
 #### 2. Módulo: mercadonaFeeder
 
