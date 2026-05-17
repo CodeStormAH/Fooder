@@ -132,7 +132,7 @@ Para ejecutar los respectivos módulos, hace falta introducir una serie de varia
 - Módulo `mercadonaFeeder`:
   - URL de Mercadona: `"https://tienda.mercadona.es/"`
   - Dirección de la API interna: `"/api/categories/"`
-  - Directorio del fichero de categorías: `"C:\Users\abelc\Documents\Universidad 25-26\Segundo Cuatrimestre\DACD\Intellij\Fooder\mercadonaFeeder\src\main\resources\categories.json"`(ejepmlo)
+  - Directorio del fichero de categorías: `"C:\Users\abelc\Documents\Universidad 25-26\Segundo Cuatrimestre\DACD\Intellij\Fooder\mercadonaFeeder\src\main\resources\categories.json"`(ejemplo)
   - URL para el broker: `"tcp://localhost:61616"`
   - Nombre del topic: `"comparison.Product"`
   - Nombre de la fuente: `"mercadona"`
@@ -143,7 +143,7 @@ Para ejecutar los respectivos módulos, hace falta introducir una serie de varia
   - Nombre de la fuente (según el feeder que quieras mandar): `"alcampo"` o `"mercadona"`
   - Nombre del paquete para guardar los eventos: `"eventstore"`
  
-- Módulo `bussines-unit:
+- Módulo `bussines-unit`:
   - URL para el broker: `"tcp://localhost:61616"`
   - Nombre del topic: `"comparison.Product"`
   - Directorio de la carpeta de eventos: `"/Users/macbookpro/IdeaProjects/Fooder/eventstore"`(ejemplo)
