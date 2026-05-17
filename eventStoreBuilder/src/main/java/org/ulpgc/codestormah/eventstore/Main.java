@@ -1,11 +1,18 @@
 package org.ulpgc.codestormah.eventstore;
 
-import org.ulpgc.codestormah.eventstore.control.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.ulpgc.codestormah.eventstore.control.ActiveMQSubscriber;
+import org.ulpgc.codestormah.eventstore.control.FileEventStore;
 
 public class Main {
-     static void main(String[] args) throws Exception {
+
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+
+    public static void main(String[] args) throws Exception {
+
         if (args.length < 4) {
-            System.out.println("Usage: <BrokerURL> <Topic> <Source> <Root>");
+            logger.error("Usage: <BrokerURL> <Topic> <Source> <Root>");
             return;
         }
 
@@ -15,9 +22,11 @@ public class Main {
         String root = args[3];
 
         FileEventStore fileStore = new FileEventStore(root);
-        ActiveMQSubscriber subscriber = new ActiveMQSubscriber(brokerUrl, topic, source, fileStore);
+        ActiveMQSubscriber subscriber =
+                new ActiveMQSubscriber(brokerUrl, topic, source, fileStore);
 
-        System.out.println("Event Store Builder started for source: " + source);
+        logger.info("Event Store Builder started for source={}", source);
+
         subscriber.start();
 
         Thread.currentThread().join();

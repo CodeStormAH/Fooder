@@ -1,6 +1,9 @@
 package org.ulpgc.codestormah.eventstore.control;
 
-import java.io.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.Clock;
@@ -8,6 +11,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class FileEventStore {
+
+    private static final Logger logger = LoggerFactory.getLogger(FileEventStore.class);
+
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -29,7 +35,7 @@ public class FileEventStore {
             appendEvent(file, event);
 
         } catch (IOException e) {
-            logError(e);
+            logger.error("Error writing event to store (topic={}, source={})", topic, source, e);
         }
     }
 
@@ -49,9 +55,5 @@ public class FileEventStore {
                 StandardOpenOption.CREATE,
                 StandardOpenOption.APPEND
         );
-    }
-
-    private void logError(IOException e) {
-        System.err.println("Error writing to EventStore: " + e.getMessage());
     }
 }
