@@ -203,6 +203,28 @@ Rastrea la evolución temporal de tarifas para un artículo concreto. Gracias al
 * **Respuesta:** `[{"ts":"2026-05-17T13:25:34.3949769","ss":"mercadona","id":"21694","name":"Bebida preparada de vodka sabor maracuyÃ¡ Knebep Passion fruit","normalizedName":"bebida preparada de vodka sabor maracuyÃ¡ knebep passion fruit","brand":"Other","category":"licores","unitPrice":1.3,"unit":"l","quantity":0.275,"onSale":false}]` (solo hay un precio porque no se ha registrado ninguno distinto para ese producto)
 
 
+### HTML implementado por nosotros
+
+Además del HTML básico que nos proporciona Javalin hemos decicido implementar uno con el objetivo de facicilitar la búsqueda de la información útil dentro de nuestra APP. Para ello hemos creado un fichero index.HTML que genera la siguiente URL: `http://localhost:63342/Fooder/business-unit/index.html?_ijt=8ait8audveoq283uoig34nh1f0&_ij_reload=RELOAD_ON_SAVE`
+
+A continuación mostramos capturas de las posibilidades que tiene nuestra APP desde esta ubicación:
+
+#### 1. Consulta por categorías
+Al entrar a la página, tendremos que selccionar el desplegable de categorías. Este nos mostrará todas las categorías que maneja nuestra APP. Usted podrá seleccionar la que quiera consultar y le tendrá que dar a buscar datos. Hecho esto, se mostrarán los productos y la recomendación de dicha categoría.
+
+<img width="1680" height="1050" alt="Captura de Pantalla 2026-05-17 a las 18 00 45" src="https://github.com/user-attachments/assets/96fea511-284d-41b5-bc5b-09907b733bb1" />
+
+#### 2. Información contenida en la categoría
+Se muestran los productos en ordenados por precios de menor a mayor. Al principio de la página encontrarás la recomendación de esa categoría, indicándote el mejor supermercado según la media calculada con los precios de los productos de ambas fuentes. Además, se muestra también el producto más barato y el cálculo de la media para que usted pueda comprobarlo. El producto más caro, en el caso de que lo quiera consultar, lo encontrará al final de la página. También puede hacer uso de la barra de búsqueda si está interesado en buscar un producto o marca en concreto.
+
+<img width="1680" height="1050" alt="Captura de Pantalla 2026-05-17 a las 18 04 26" src="https://github.com/user-attachments/assets/b223ef03-98fd-4a90-b059-02808b657c74" />
 
 
+#### 3. Historial de precios
+Una vez visto toda la información disponible, queda por ver una función muy útil. Como pudo comprobar, cada producto tiene un botón de historial al final de su fila. Si aprieta este botón se le abrirá una pestaña al principio de la página donde podrá ver los cambios en el precio de ese producto, indicándole día y hora del cambio registrado.
+
+<img width="1680" height="1050" alt="Captura de Pantalla 2026-05-17 a las 18 10 21" src="https://github.com/user-attachments/assets/0469d8e8-7004-4787-822b-06f2fb025c57" />
+
+
+Una vez visto todo esto, ya tendría perfecto conocimiento sobre nuestra APP.
 
