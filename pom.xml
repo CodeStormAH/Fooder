@@ -10,8 +10,10 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>alcampo-module</module>
-        <module>mercadona-module</module>
+        <module>alcampoFeeder</module>
+        <module>mercadonaFeeder</module>
+        <module>eventStoreBuilder</module>
+        <module>business-unit</module>
     </modules>
 
 </project>

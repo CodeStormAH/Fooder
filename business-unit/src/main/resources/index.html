@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fooder</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        h1, h2 { color: #2c3e50; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .control-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        select, input, button { padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; }
+        input { flex-grow: 1; min-width: 200px; }
+        button { background-color: #3498db; color: white; border: none; cursor: pointer; transition: 0.3s; }
+        button:hover { background-color: #2980b9; }
+
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; border-left: 5px solid #27ae60; }
+        .card-title { margin-top: 0; color: #27ae60; }
+
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #34495e; color: white; }
+        tr:hover { background-color: #f1f1f1; }
+
+        .history-btn { background-color: #f39c12; font-size: 14px; padding: 5px 10px; color: white; border: none; border-radius: 4px; cursor: pointer;}
+        .history-btn:hover { background-color: #d68910; }
+
+        #history-section { display: none; margin-bottom: 20px; background: #fff3e0; padding: 20px; border-radius: 8px; border-left: 5px solid #e67e22; }
+        .source-badge { background:#e8f4fd; color:#2b6cb0; padding:4px 8px; border-radius:4px; font-weight: bold; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛒 Fooder </h1>
+
+    <div class="control-panel">
+        <div>
+            <label for="categorySelect"><strong>Categoría:</strong></label>
+            <select id="categorySelect">
+                <option value="">Cargando categorías...</option>
+            </select>
+        </div>
+        <button onclick="loadCategoryData()">Buscar Datos</button>
+
+        <input type="text" id="searchInput" placeholder="🔍 Buscar por nombre o marca..." onkeyup="filterProducts()" disabled>
+    </div>
+
+    <div id="recommendation-section" class="card" style="display: none;">
+        <h2 class="card-title">🏆 Recomendación Actual</h2>
+        <p><strong>Mejor Supermercado:</strong> <span id="rec-source"></span></p>
+        <p><strong>Producto más barato:</strong> <span id="rec-cheapest"></span></p>
+        <div id="rec-comparison"></div>
+    </div>
+
+    <div id="history-section">
+        <h2 style="color: #e67e22; margin-top:0;">📈 Historial de Cambios de Precio</h2>
+        <h3 id="history-title" style="margin-bottom: 10px;"></h3>
+        <ul id="history-list" style="padding-left: 20px; line-height: 1.6; list-style-type: none;"></ul>
+    </div>
+
+    <h2>📦 Productos Disponibles</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Marca</th>
+            <th>Cantidad</th>
+            <th>Unidad</th>
+            <th>Fuente</th>
+            <th>Precio</th>
+            <th>Acción</th>
+        </tr>
+        </thead>
+        <tbody id="products-tbody">
+        <tr><td colspan="7" style="text-align: center;">Selecciona una categoría para ver productos</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const API_URL = 'http://localhost:7000/api';
+    let allProducts = [];
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        try {
+            const res = await fetch(`${API_URL}/categories`);
+            const categories = await res.json();
+            const select = document.getElementById('categorySelect');
+            select.innerHTML = '';
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat.toUpperCase();
+                select.appendChild(option);
+            });
+        } catch (error) {
+            document.getElementById('categorySelect').innerHTML = '<option>Error cargando API (¿CORS habilitado?)</option>';
+            console.error("Error al cargar categorías:", error);
+        }
+    });
+
+    async function loadCategoryData() {
+        const category = document.getElementById('categorySelect').value;
+        if (!category) return;
+
+        document.getElementById('history-section').style.display = 'none';
+        document.getElementById('searchInput').value = '';
+
+        // 1. Cargar Recomendación
+        try {
+            const resRec = await fetch(`${API_URL}/recommendation/${category}`);
+            if (resRec.ok) {
+                const rec = await resRec.json();
+                document.getElementById('recommendation-section').style.display = 'block';
+                document.getElementById('rec-source').textContent = rec.recommendedSource;
+                document.getElementById('rec-cheapest').textContent = `${rec.cheapestProductName} (${rec.cheapestUnitPrice} €) en ${rec.cheapestSource}`;
+
+                let compHtml = "<strong>Comparativa media por supermercado:</strong><ul>";
+                for (const [source, price] of Object.entries(rec.comparison)) {
+                    compHtml += `<li><strong>${source}:</strong> ${price}</li>`;
+                }
+                compHtml += "</ul>";
+                document.getElementById('rec-comparison').innerHTML = compHtml;
+            } else {
+                document.getElementById('recommendation-section').style.display = 'none';
+            }
+        } catch (error) {
+            console.error("Error cargando recomendación", error);
+        }
+
+        // 2. Cargar Lista de Productos
+        try {
+            const resProd = await fetch(`${API_URL}/products/${category}`);
+            allProducts = await resProd.json();
+
+            document.getElementById('searchInput').disabled = false;
+            renderTable(allProducts);
+        } catch (error) {
+            console.error("Error cargando productos", error);
+        }
+    }
+
+    function renderTable(productsList) {
+        const tbody = document.getElementById('products-tbody');
+        tbody.innerHTML = '';
+
+        if(productsList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No se encontraron productos coincidentes</td></tr>';
+            return;
+        }
+
+        productsList.forEach(p => {
+            const tr = document.createElement('tr');
+
+            // Usamos internamente p.normalizedName por ser el valor limpio, con fallback al original
+            const displayName = p.normalizedName ? p.normalizedName : (p.name ? p.name : '-');
+
+            tr.innerHTML = `
+                <td>${displayName}</td>
+                <td>${p.brand || '-'}</td>
+                <td>${p.quantity || '-'}</td>
+                <td>${p.unit || '-'}</td>
+                <td><span class="source-badge">${p.ss}</span></td>
+                <td><strong>${p.unitPrice} €</strong></td>
+                <td><button class="history-btn" onclick="viewHistory('${p.id}', '${p.ss}', '${displayName.replace(/'/g, "\\'")}')">Ver Historial</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filterProducts() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = allProducts.filter(p => {
+            const normalizedMatch = p.normalizedName ? p.normalizedName.toLowerCase().includes(query) : false;
+            const nameMatch = p.name ? p.name.toLowerCase().includes(query) : false;
+            const brandMatch = p.brand ? p.brand.toLowerCase().includes(query) : false;
+
+            return normalizedMatch || nameMatch || brandMatch;
+        });
+        renderTable(filtered);
+    }
+
+    async function viewHistory(id, source, name) {
+        try {
+            const res = await fetch(`${API_URL}/history/${source}/${id}`);
+            const history = await res.json();
+
+            const historySec = document.getElementById('history-section');
+            const historyList = document.getElementById('history-list');
+            document.getElementById('history-title').textContent = `${name} (${source})`;
+
+            historyList.innerHTML = '';
+
+            if (!history || history.length === 0) {
+                historyList.innerHTML = '<li>No hay registros de precios guardados para este producto.</li>';
+            } else {
+                history.forEach(h => {
+                    const fechaLegible = h.ts ? new Date(h.ts).toLocaleString('es-ES') : 'Fecha no registrada';
+                    historyList.innerHTML += `
+                        <li style="margin-bottom: 8px;">
+                            📅 <strong>${fechaLegible}</strong> — Precio registrado: <strong style="color: #e67e22;">${h.unitPrice} €</strong>
+                        </li>`;
+                });
+            }
+            historySec.style.display = 'block';
+            historySec.scrollIntoView({ behavior: 'smooth' });
+        } catch (error) {
+            console.error("Error cargando historial", error);
+            alert("No se pudo obtener el historial.");
+        }
+    }
+</script>
+</body>
+</html>

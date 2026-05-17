@@ -1,0 +1,15 @@
+{
+  "allowedCategories": [
+    "cerveza",
+    "licores",
+    "sidra y cava",
+    "vino blanco",
+    "vino tinto",
+    "refresco de té y sin gas",
+    "tónica y bitter",
+    "refresco de naranja y de limón",
+    "refresco de cola",
+    "isotónico y energético",
+    "agua"
+  ]
+}
