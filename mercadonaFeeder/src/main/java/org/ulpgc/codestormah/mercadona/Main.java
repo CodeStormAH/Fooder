@@ -24,6 +24,7 @@ public class Main {
             String categoriesFile = args[2];
             String brokerUrl = args[3];
             String topicName = args[4];
+            String source = args[5];
 
             logger.info("Starting Mercadona feeder");
 
@@ -34,7 +35,7 @@ public class Main {
             ProductStore store = createStore(
                     brokerUrl,
                     topicName,
-                    "mercadona"
+                    source
             );
 
             MercadonaFeeder feeder = new MercadonaFeeder(
@@ -61,7 +62,7 @@ public class Main {
 
     private static void validateArgs(String[] args) {
 
-        if (args.length < 5) {
+        if (args.length < 6) {
 
             throw new IllegalArgumentException(
                     "Usage: java Main <apiUrl> <categoriesPath> <categoriesFile> <brokerUrl> <topic>"
