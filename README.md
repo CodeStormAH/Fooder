@@ -157,4 +157,4 @@ La Unidad de Negocio expone una API HTTP pública a través de **Javalin** para 
 Comprueba de manera rápida si el servidor HTTP está levantado y respondiendo peticiones.
 * **Endpoint:** `GET /api/health`
 * **Ejemplo de consulta:**
-  ``` http://localhost:8080/api/health
+  ``` http://localhost:7000/api/health```
