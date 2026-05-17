@@ -2,12 +2,13 @@ package org.ulpgc.codestormah.mercadona.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.ulpgc.codestormah.mercadona.model.Event;
 import org.ulpgc.codestormah.mercadona.model.Product;
 
 import javax.jms.*;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ActiveMQFactory {
 
@@ -22,30 +23,35 @@ public class ActiveMQFactory {
                 .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         return new ProductStore() {
+
             @Override
             public void save(List<Product> products) {
 
                 for (Product product : products) {
+
                     try {
-                        Event event = new Event(
-                                LocalDateTime.now().withNano(0),
-                                source,
 
-                                product.id(),
-                                product.name(),
-                                product.normalizedName(),
-                                product.brand(),
-                                product.category(),
+                        Map<String, Object> event = new LinkedHashMap<>();
 
-                                product.unitPrice(),
-                                product.unit(),
-                                product.quantity(),
+                        event.put("ts", LocalDateTime.now());
+                        event.put("ss", source);
 
-                                product.isOnSale()
-                        );
+                        event.put("id", product.id());
+                        event.put("name", product.name());
+                        event.put("normalizedName", product.normalizedName());
+                        event.put("brand", product.brand());
+                        event.put("category", product.category());
+
+                        event.put("unitPrice", product.unitPrice());
+                        event.put("unit", product.unit());
+                        event.put("quantity", product.quantity());
+
+                        event.put("isOnSale", product.isOnSale());
 
                         String json = mapper.writeValueAsString(event);
+
                         TextMessage message = session.createTextMessage(json);
+
                         producer.send(message);
 
                     } catch (Exception e) {
@@ -57,9 +63,13 @@ public class ActiveMQFactory {
     }
 
     private static Connection createConnection(String brokerUrl) throws JMSException {
+
         ConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
+
         Connection connection = factory.createConnection();
+
         connection.start();
+
         return connection;
     }
 
