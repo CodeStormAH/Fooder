@@ -149,4 +149,12 @@ Para ejecutar los respectivos módulos, hace falta introducir una serie de varia
   - Directorio de la carpeta de eventos: `"/Users/macbookpro/IdeaProjects/Fooder/eventstore"`(ejemplo)
   - Puerto de la API: `7000`
 
+## Ejemplos de Uso de la API REST
 
+La Unidad de Negocio expone una API HTTP pública a través de **Javalin** para permitir la consulta del Datamart en tiempo real. Asumiendo que el servicio se ha levantado localmente en el puerto `7000`, los endpoints disponibles y sus contratos de uso son los siguientes:
+
+### 1. Verificación del Estado del Sistema (Health Check)
+Comprueba de manera rápida si el servidor HTTP está levantado y respondiendo peticiones.
+* **Endpoint:** `GET /api/health`
+* **Ejemplo de consulta:**
+  ``` http://localhost:8080/api/health
