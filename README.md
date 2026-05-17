@@ -11,7 +11,7 @@ La **propuesta de valor** de la aplicación se sostiene sobre tres pilares orien
 
 - **Centralización y Transparencia Multicanal**: Elimina la opacidad del mercado al unificar los productos de diferentes cadenas competidoras (como Alcampo y otras grandes superficies) en una única base de conocimiento común, facilitando la comparación directa.
 
-- **Recomendación Automatizada del Mayor Ahorro**: El sistema no se limita a listar datos; procesa estadísticamente el coste de los artículos para recomendar de forma activa qué supermercado ofrece las mejores tarifas medias para una categoría concreta (por ejemplo, "Aceites" o "Lácteos"), identificando además el producto más barato de forma absoluta.
+- **Recomendación Automatizada del Mayor Ahorro**: El sistema no se limita a listar datos; procesa estadísticamente el coste de los artículos para recomendar de forma activa qué supermercado ofrece las mejores tarifas medias para una categoría concreta (por ejemplo, "licores" o "cervezas"), identificando además el producto más barato de forma absoluta.
 
 - **Historial de Evolución Depurado**: Rastrea la línea de tiempo de cada artículo eliminando de forma inteligente las lecturas repetidas. El usuario puede visualizar con total claridad los momentos exactos en los que se produjo una fluctuación real de valor o una oferta especial, permitiendo analizar tendencias de precios a lo largo del tiempo.
 
@@ -48,7 +48,7 @@ Para el procesamiento y la exposición del Datamart, se seleccionaron componente
 
 El Datamart en memoria se ha diseñado bajo los principios de baja latencia de lectura y alta concurrencia hilos, estructurado principalmente en dos almacenes independientes pero coordinados: `ProductStore` y `RecommendationStore`.
 
-1. **Tratamiento de la Concurrencia (Thread-Safety)**
+1. **Tratamiento de la Concurrencia**
 
 Dado que el bróker de mensajería inyecta datos constantemente a través de un hilo asíncrono (`ProductConsumer`), mientras que múltiples usuarios pueden realizar peticiones HTTP simultáneas a la API REST, el Datamart mitiga condiciones de carrera mediante estructuras no bloqueantes:
 
@@ -336,3 +336,37 @@ Es el núcleo inteligente del sistema (Unidad de Negocio). Se encarga de procesa
 
 <img width="1303" height="878" alt="Bussines-unit" src="https://github.com/user-attachments/assets/7f002b17-e0b8-4153-a99b-89aa3808763b" />
 
+
+## Principios y Patrones de Diseño Aplicados en cada Módulo
+
+El diseño de este sistema multimódulo se fundamenta en los principios de la ingeniería de software moderna (**SOLID**) y en la aplicación selectiva de patrones de diseño arquitectónicos y de comportamiento. Esto garantiza un código limpio, legible y con alta cohesión y bajo acoplamiento.
+
+
+### 1. Módulo: alcampoFeeder
+
+* **Patrón Estrategia e Inversión de Dependencias:** La comunicación con el destino de los datos está completamente abstraída mediante la interfaz `AlcampoStore`. El controlador (`AlcampoController`) depende de esta abstracción y no de una implementación concreta. Esto permite intercambiar dinámicamente el comportamiento entre enviar datos al bróker (`ActiveMQAlcampoStore`) o guardarlos localmente (`DatabaseAlcampoStore`) sin alterar una sola línea de la lógica de control.
+* **Patrón Extractor-Controlador:** Se separan rígidamente las responsabilidades de automatización y de flujo. `AlcampoScraperFeeder` se concentra de forma exclusiva en lidiar con Selenium y el DOM de la web, mientras que `AlcampoController` maneja el orden cronológico y secuencial de la captura de categorías.
+* **Principio de Responsabilidad Única (SRP):** Cada clase tiene una única razón para cambiar. El scraper solo interactúa con el navegador, el store solo despacha hacia la infraestructura, y el modelo `Product` solo retiene la estructura de datos.
+
+
+### 2. Módulo: mercadonaFeeder
+
+* **Patrón Factoría:** La creación y configuración interna de los objetos de conexión JMS se delega por completo a la clase `ActiveMQFactory`. Esto encapsula la complejidad de inicializar el bróker y evita duplicar líneas de código de infraestructura en los controladores principales.
+* **Principio de Responsabilidad Única (SRP) extendido:** * `CategoryLoader` tiene la única misión de leer y parsear el fichero de configuración de recursos de disco (`categories.json`).
+* `ProductTextProcessor` aísla por completo la lógica de limpieza de cadenas, formateo y normalización de textos. Si las reglas de negocio para limpiar el nombre de un producto cambian, solo se modifica esta clase utilitaria.
+
+
+
+
+### 3. Módulo: eventStoreBuilder
+
+* **Patrón Observador / Suscriptor:** `ActiveMQSubscriber` implementa de forma nativa la interfaz `MessageListener` de JMS. En lugar de realizar consultas periódicas ineficientes al servidor (*polling*), el componente permanece dormido y es el propio bróker el que le "notifica" e inyecta asíncronamente el mensaje JSON mediante un evento controlado en el método `onMessage`.
+* **Diseño Sumidero Inmutable:** La clase `FileEventStore` aplica el principio de inmutabilidad de datos de la Arquitectura Lambda. No edita ni actualiza registros existentes; se limita a realizar operaciones de adición estricta (`append`), garantizando la integridad histórica del almacenamiento.
+
+
+### 4. Módulo: business-unit
+
+* **Inyección de Dependencias:** En el punto de entrada (`Main`), se instancian explícitamente los almacenes de datos y se inyectan a través de los constructores hacia el procesador y el consumidor (`new EventProcessor(productStore, recommendationStore)`). Esto elimina el uso de estados globales ocultos o acoplamientos rígidos, facilitando las pruebas unitarias aisladas.
+* **Patrón Vista Materializada:** Se aplica para optimizar el rendimiento analítico. El cálculo de medias y la selección del supermercado ideal es una operación costosa. En lugar de computarla cada vez que un usuario hace una petición HTTP, `RecommendationStore` mantiene una vista materializada precalculada. Cada vez que `EventProcessor` detecta un nuevo evento, actualiza de forma proactiva la categoría analizada. La API REST solo tiene que leer un mapa estático en tiempo constante **O(1)**.
+* **Patrón Estrategia mediante Comparadores:** La ordenación de los productos devueltos por la API no está harcodeada en las colecciones. `ProductStore` delega esta regla en un comparador encadenado fluido (`priceComparator`), facilitando cambiar los criterios de ordenación (por precio, luego ID, luego origen) de forma limpia y transparente.
+* **Patrón Controlador (MVC - Capa de Vista):** `ApiController` asume el rol exclusivo de controlador web en la arquitectura. No conoce cómo se estructuran internamente los hilos de memoria ni cómo se calculan las medias; su única responsabilidad es interceptar la petición HTTP de Javalin, validar los parámetros de ruta y serializar la respuesta JSON correspondiente.
