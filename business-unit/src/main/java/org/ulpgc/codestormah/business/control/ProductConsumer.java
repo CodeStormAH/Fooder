@@ -1,9 +1,15 @@
 package org.ulpgc.codestormah.business.control;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.jms.*;
 
 public class ProductConsumer {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProductConsumer.class);
+
     private final String brokerUrl;
     private final String topicName;
     private final EventProcessor processor;
@@ -27,16 +33,23 @@ public class ProductConsumer {
 
             MessageConsumer consumer = session.createDurableSubscriber(topic, "BusinessUnit_Sub");
 
-            System.out.println("🎧 Escuchando eventos en tiempo real en ActiveMQ...");
+            logger.info("Listening to ActiveMQ topic: {}", topicName);
 
             consumer.setMessageListener(message -> {
                 try {
-                    if (message instanceof TextMessage) {
-                        String json = ((TextMessage) message).getText();
+                    if (message instanceof TextMessage textMessage) {
+                        String json = textMessage.getText();
                         processor.processJson(json);
+                    } else {
+                        logger.warn("Received non-text JMS message: {}", message.getClass().getSimpleName());
                     }
-                } catch (Exception e) { e.printStackTrace(); }
+                } catch (Exception e) {
+                    logger.error("Error processing JMS message", e);
+                }
             });
-        } catch (Exception e) { e.printStackTrace(); }
+
+        } catch (Exception e) {
+            logger.error("Failed to start ProductConsumer (broker={}, topic={})", brokerUrl, topicName, e);
+        }
     }
 }
