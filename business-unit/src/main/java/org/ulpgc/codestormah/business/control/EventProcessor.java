@@ -49,6 +49,7 @@ public class EventProcessor {
         try (Stream<Path> paths = Files.walk(root)) {
 
             paths.filter(p -> p.toString().endsWith(".events"))
+                    .sorted()
                     .forEach(path -> {
 
                         try (Stream<String> lines = Files.lines(path, StandardCharsets.UTF_8)) {
