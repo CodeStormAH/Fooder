@@ -352,7 +352,7 @@ El diseño de este sistema multimódulo se fundamenta en los principios de la in
 ### 2. Módulo: mercadonaFeeder
 
 * **Patrón Factoría:** La creación y configuración interna de los objetos de conexión JMS se delega por completo a la clase `ActiveMQFactory`. Esto encapsula la complejidad de inicializar el bróker y evita duplicar líneas de código de infraestructura en los controladores principales.
-* **Principio de Responsabilidad Única (SRP) extendido:** * `CategoryLoader` tiene la única misión de leer y parsear el fichero de configuración de recursos de disco (`categories.json`).
+* **Principio de Responsabilidad Única (SRP) extendido:** `CategoryLoader` tiene la única misión de leer y parsear el fichero de configuración de recursos de disco (`categories.json`).
 * `ProductTextProcessor` aísla por completo la lógica de limpieza de cadenas, formateo y normalización de textos. Si las reglas de negocio para limpiar el nombre de un producto cambian, solo se modifica esta clase utilitaria.
 
 
