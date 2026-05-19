@@ -24,30 +24,40 @@ public class ProductConsumer {
 
     public void start() {
         try {
-            ConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
-            Connection connection = factory.createConnection();
-            connection.setClientID("BusinessUnit_API_Client");
-            connection.start();
+            Connection connection = initJmsConnection();
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             Topic topic = session.createTopic(topicName);
             MessageConsumer consumer = session.createDurableSubscriber(topic, "BusinessUnit_Sub");
             logger.info("Listening to ActiveMQ topic: {}", topicName);
-            consumer.setMessageListener(message -> {
-                try {
-                    if (message instanceof TextMessage textMessage) {
-                        String json = textMessage.getText();
-                        Product product = gson.fromJson(json, Product.class);
-                        processor.processProduct(product);
-                    } else {
-                        logger.warn("Received non-text JMS message: {}", message.getClass().getSimpleName());
-                    }
-                } catch (Exception e) {
-                    logger.error("Error processing JMS message", e);
-                }
-            });
-
+            consumer.setMessageListener(this::handleJmsMessage);
         } catch (Exception e) {
             logger.error("Failed to start ProductConsumer (broker={}, topic={})", brokerUrl, topicName, e);
         }
+    }
+
+    private Connection initJmsConnection() throws JMSException {
+        ConnectionFactory factory = new ActiveMQConnectionFactory(brokerUrl);
+        Connection connection = factory.createConnection();
+        connection.setClientID("BusinessUnit_API_Client");
+        connection.start();
+        return connection;
+    }
+
+    private void handleJmsMessage(Message message) {
+        try {
+            if (message instanceof TextMessage textMessage) {
+                processTextMessage(textMessage);
+            } else {
+                logger.warn("Received non-text JMS message: {}", message.getClass().getSimpleName());
+            }
+        } catch (Exception e) {
+            logger.error("Error processing JMS message", e);
+        }
+    }
+
+    private void processTextMessage(TextMessage textMessage) throws JMSException {
+        String json = textMessage.getText();
+        Product product = gson.fromJson(json, Product.class);
+        processor.processProduct(product);
     }
 }
