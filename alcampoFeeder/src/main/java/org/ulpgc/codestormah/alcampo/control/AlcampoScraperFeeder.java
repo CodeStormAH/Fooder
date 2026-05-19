@@ -6,7 +6,6 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -20,6 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AlcampoScraperFeeder implements AlcampoFeeder {
+
     private static final Logger logger = Logger.getLogger(AlcampoScraperFeeder.class.getName());
     private static final int SEARCH_WAIT_MS = 4000;
     private static final int SCROLL_WAIT_MS = 2000;

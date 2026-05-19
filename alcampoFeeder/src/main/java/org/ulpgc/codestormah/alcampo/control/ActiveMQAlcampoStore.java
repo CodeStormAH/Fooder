@@ -6,12 +6,12 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ulpgc.codestormah.alcampo.model.Product;
-
 import javax.jms.*;
 import java.time.Instant;
 import java.util.List;
 
 public class ActiveMQAlcampoStore implements AlcampoStore {
+
     private static final Logger logger = LoggerFactory.getLogger(ActiveMQAlcampoStore.class);
     private final String brokerUrl;
     private final String topicName;

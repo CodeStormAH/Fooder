@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DatabaseAlcampoStore implements AlcampoStore {
+
     private static final Logger logger = Logger.getLogger(DatabaseAlcampoStore.class.getName());
     private static final String CREATE_PRODUCTS_TABLE = "CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, name TEXT, normalized_name TEXT, brand TEXT, category TEXT, quantity REAL, unit TEXT)";
     private static final String CREATE_PRICES_TABLE = "CREATE TABLE IF NOT EXISTS prices (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, unit_price REAL, is_on_sale BOOLEAN, date TEXT DEFAULT (datetime('now')), FOREIGN KEY(product_id) REFERENCES products(id))";

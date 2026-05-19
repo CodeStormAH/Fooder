@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class AlcampoController {
+
     private static final Logger logger = Logger.getLogger(AlcampoController.class.getName());
     private final AlcampoFeeder feeder;
     private final AlcampoStore store;
