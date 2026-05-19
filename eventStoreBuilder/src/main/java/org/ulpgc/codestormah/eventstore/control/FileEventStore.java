@@ -14,7 +14,6 @@ public class FileEventStore {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileEventStore.class);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
-
     private final Path root;
     private final Clock clock;
 

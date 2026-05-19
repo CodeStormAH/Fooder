@@ -12,7 +12,6 @@ public class ActiveMQSubscriber {
     private final Config config;
     private final FileEventStore store;
     private final Gson gson = new Gson();
-
     private Connection connection;
     private Session session;
     private MessageConsumer consumer;
