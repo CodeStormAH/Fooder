@@ -107,7 +107,6 @@
         document.getElementById('history-section').style.display = 'none';
         document.getElementById('searchInput').value = '';
 
-        // 1. Cargar Recomendación
         try {
             const resRec = await fetch(`${API_URL}/recommendation/${category}`);
             if (resRec.ok) {
@@ -129,7 +128,6 @@
             console.error("Error cargando recomendación", error);
         }
 
-        // 2. Cargar Lista de Productos
         try {
             const resProd = await fetch(`${API_URL}/products/${category}`);
             allProducts = await resProd.json();
