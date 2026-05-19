@@ -6,7 +6,6 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -16,15 +15,16 @@ import java.util.*;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AlcampoScraperFeeder implements AlcampoFeeder {
 
     private static final Logger logger = Logger.getLogger(AlcampoScraperFeeder.class.getName());
-
-    private final String baseUrl;
-    private final String categoriesPath;
     private static final int SEARCH_WAIT_MS = 4000;
     private static final int SCROLL_WAIT_MS = 2000;
+    private final String baseUrl;
+    private final String categoriesPath;
 
     public AlcampoScraperFeeder(String baseUrl, String categoriesPath) {
         this.baseUrl = baseUrl;
@@ -35,8 +35,35 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
     public List<Product> fetchProducts() {
         Map<String, String> categories = loadCategories();
         if (categories.isEmpty()) return new ArrayList<>();
-
         return executeScrapingSession(categories);
+    }
+
+    private Map<String, String> loadCategories() {
+        try {
+            return readCategoriesFromFile();
+        } catch (IOException e) {
+            logger.severe("Critical error reading categories file: " + e.getMessage());
+            return new LinkedHashMap<>();
+        }
+    }
+
+    private Map<String, String> readCategoriesFromFile() throws IOException {
+        Map<String, String> categoryMap = new LinkedHashMap<>();
+        List<String> lines = Files.readAllLines(Paths.get(this.categoriesPath));
+        for (String line : lines) {
+            if (line.trim().isEmpty()) continue;
+            parseCategoryLine(line, categoryMap);
+        }
+        return categoryMap;
+    }
+
+    private void parseCategoryLine(String line, Map<String, String> categoryMap) {
+        String[] parts = line.split(":");
+        if (parts.length == 2) {
+            categoryMap.put(parts[0].trim(), parts[1].trim());
+        } else {
+            categoryMap.put(line.trim(), line.trim());
+        }
     }
 
     private List<Product> executeScrapingSession(Map<String, String> categories) {
@@ -62,9 +89,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         for (Map.Entry<String, String> entry : categories.entrySet()) {
             String categoryName = entry.getKey();
             String searchTerm = entry.getValue();
-
             if (categoryName.isBlank() || searchTerm.isBlank()) continue;
-
             logger.info("Searching for: '" + searchTerm + "' (Saving as Category: '" + categoryName + "')");
             scrapeCategory(driver, categoryName, searchTerm, products);
         }
@@ -78,60 +103,68 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         extractCategoryProducts(driver, categoryName, products);
     }
 
+    private void navigateToHome(WebDriver driver) {
+        try {
+            driver.get(this.baseUrl);
+            pause(3000);
+        } catch (Exception ignored) {}
+    }
+
+    private void acceptCookies(WebDriver driver) {
+        try {
+            WebElement acceptButton = driver.findElement(By.id("onetrust-accept-btn-handler"));
+            if (acceptButton.isDisplayed()) acceptButton.click();
+        } catch (Exception ignored) {}
+    }
+
     private void performSearch(WebDriver driver, String searchTerm) {
         try {
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-            WebElement searchBar = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector("input[placeholder*='Buscar'], input[type='search']")
-            ));
-
-            searchBar.clear();
-            searchBar.sendKeys(searchTerm);
-            searchBar.sendKeys(Keys.ENTER);
-            pause(SEARCH_WAIT_MS);
-
+            executeSearchSequence(driver, searchTerm);
         } catch (Exception e) {
-            logger.log(Level.SEVERE,
-                    "Search error for '" + searchTerm + "': " + e.getMessage(), e);
+            logger.log(Level.SEVERE, "Search error for '" + searchTerm + "': " + e.getMessage(), e);
         }
     }
 
+    private void executeSearchSequence(WebDriver driver, String searchTerm) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebElement searchBar = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.cssSelector("input[placeholder*='Buscar'], input[type='search']")));
+        searchBar.clear();
+        searchBar.sendKeys(searchTerm);
+        searchBar.sendKeys(Keys.ENTER);
+        pause(SEARCH_WAIT_MS);
+    }
+
     private void applyDrinksFilter(WebDriver driver) {
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(12));
         try {
-            WebElement bebidasLink = wait.until(ExpectedConditions.presenceOfElementLocated(
-                    By.xpath("//a[@data-test='root-category-link' and contains(normalize-space(), 'Bebidas')]")
-            ));
-
-            ((JavascriptExecutor) driver)
-                    .executeScript("arguments[0].scrollIntoView({block: 'center'});", bebidasLink);
-
-            pause(700);
-            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", bebidasLink);
-
-            logger.info("Filter 'Drinks' applied.");
-
-            wait.until(ExpectedConditions.urlContains("sublocationId"));
-            wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("[data-test^='fop-wrapper']")));
-            pause(1500);
-
+            executeDrinksFilterLogic(driver);
         } catch (Exception e) {
             logger.warning("Drink filter does not found");
         }
+    }
+
+    private void executeDrinksFilterLogic(WebDriver driver) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(12));
+        WebElement bebidasLink = wait.until(ExpectedConditions.presenceOfElementLocated(
+                By.xpath("//a[@data-test='root-category-link' and contains(normalize-space(), 'Bebidas')]")));
+        JavascriptExecutor javascriptExecutor = (JavascriptExecutor) driver;
+        javascriptExecutor.executeScript("arguments[0].scrollIntoView({block: 'center'});", bebidasLink);
+        pause(700);
+        javascriptExecutor.executeScript("arguments[0].click();", bebidasLink);
+        logger.info("Filter 'Drinks' applied.");
+        wait.until(ExpectedConditions.urlContains("sublocationId"));
+        wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("[data-test^='fop-wrapper']")));
+        pause(1500);
     }
 
     private void extractCategoryProducts(WebDriver driver, String categoryName, Map<String, Product> products) {
         int currentCategoryCount = 0;
         int attemptsWithoutNewData = 0;
         int lastCount = 0;
-
         while (attemptsWithoutNewData < 4) {
-            int addedInThisCycle = scanPageForProducts(driver, categoryName, products, currentCategoryCount);
-            currentCategoryCount += addedInThisCycle;
-
+            currentCategoryCount += scanPageForProducts(driver, categoryName, products);
             scrollDown(driver);
             pause(SCROLL_WAIT_MS);
-
             if (currentCategoryCount == lastCount) {
                 attemptsWithoutNewData++;
             } else {
@@ -139,80 +172,82 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                 lastCount = currentCategoryCount;
             }
         }
-
         logger.info("Finished category '" + categoryName + "' (" + currentCategoryCount + " products)");
     }
 
-    private int scanPageForProducts(WebDriver driver, String categoryName, Map<String, Product> products, int currentCount) {
-        int added = 0;
+    private int scanPageForProducts(WebDriver driver, String categoryName, Map<String, Product> products) {
+        int addedProducts = 0;
         try {
             List<WebElement> elements = driver.findElements(By.cssSelector("[data-test^='fop-wrapper']"));
             for (WebElement element : elements) {
                 if (processElement(element, categoryName, products)) {
-                    added++;
+                    addedProducts++;
                 }
             }
         } catch (Exception ignored) {}
-        return added;
+        return addedProducts;
     }
 
     private boolean processElement(WebElement element, String categoryName, Map<String, Product> products) {
         try {
-            String fullName = element.findElement(By.cssSelector("[data-test='fop-title']")).getText();
-            if (fullName.isEmpty() || products.containsKey(fullName)) return false;
-
-            products.put(fullName, createProductFromElement(element, fullName, categoryName));
-            return true;
+            return extractAndSaveProduct(element, categoryName, products);
         } catch (Exception e) {
             return false;
         }
     }
 
-    private String extractSizeFromName(String name) {
-        java.util.regex.Matcher m = java.util.regex.Pattern
-                .compile("(\\d+[,.]?\\d*)\\s*(ml|cl|litros?|\\bl\\b)", java.util.regex.Pattern.CASE_INSENSITIVE)
-                .matcher(name);
-        return m.find() ? m.group() : "";
+    private boolean extractAndSaveProduct(WebElement element, String categoryName, Map<String, Product> products) {
+        String fullName = element.findElement(By.cssSelector("[data-test='fop-title']")).getText();
+        if (fullName.isEmpty() || products.containsKey(fullName)) return false;
+        Product product = createProductFromElement(element, fullName, categoryName);
+        products.put(fullName, product);
+        return true;
     }
 
-    private Product createProductFromElement(WebElement el, String name, String categoryName) {
-        double unitPrice = fetchPrice(el, "[data-test='fop-price']");
-        String sizeText = getElementText(el, "[data-test='fop-size'] span", "[data-test='fop-size']");
-
+    private Product createProductFromElement(WebElement element, String name, String categoryName) {
+        double unitPrice = fetchPrice(element, "[data-test='fop-price']");
+        String sizeText = getElementText(element, "[data-test='fop-size'] span", "[data-test='fop-size']");
         if (!sizeText.toLowerCase().matches(".*\\d.*(ml|cl|\\bl\\b|litro|kg|gramo).*")) {
             sizeText = extractSizeFromName(name);
         }
-
         String brand = extractBrand(name);
         String normalizedName = cleanName(name, brand);
-        boolean isSale = !el.findElements(By.cssSelector(".promotion-container")).isEmpty();
+        boolean isSale = !element.findElements(By.cssSelector(".promotion-container")).isEmpty();
         String deterministicId = UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8)).toString();
-
         return new Product(
-                deterministicId, name, normalizedName,
-                brand, categoryName, unitPrice, parseUnit(sizeText),
-                parseQuantity(sizeText), isSale
+                deterministicId, name, normalizedName, brand, categoryName,
+                unitPrice, parseUnit(sizeText), parseQuantity(sizeText), isSale
         );
     }
 
-    private double fetchPrice(WebElement parent, String selector) {
+    private String extractSizeFromName(String name) {
+        Pattern pattern = Pattern.compile("(\\d+[,.]?\\d*)\\s*(ml|cl|litros?|\\bl\\b)", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(name);
+        return matcher.find() ? matcher.group() : "";
+    }
+
+    private double fetchPrice(WebElement parentElement, String selector) {
         try {
-            String text = parent.findElement(By.cssSelector(selector)).getText();
+            String text = parentElement.findElement(By.cssSelector(selector)).getText();
             return parseNumeric(text);
         } catch (Exception e) {
             return 0.0;
         }
     }
 
-    private String getElementText(WebElement parent, String primarySelector, String fallbackSelector) {
+    private String getElementText(WebElement parentElement, String primarySelector, String fallbackSelector) {
         try {
-            return parent.findElement(By.cssSelector(primarySelector)).getText();
+            return parentElement.findElement(By.cssSelector(primarySelector)).getText();
         } catch (Exception e) {
-            try {
-                return parent.findElement(By.cssSelector(fallbackSelector)).getText();
-            } catch (Exception fallback) {
-                return "";
-            }
+            return getFallbackText(parentElement, fallbackSelector);
+        }
+    }
+
+    private String getFallbackText(WebElement parentElement, String fallbackSelector) {
+        try {
+            return parentElement.findElement(By.cssSelector(fallbackSelector)).getText();
+        } catch (Exception fallback) {
+            return "";
         }
     }
 
@@ -228,87 +263,61 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
     private double parseQuantity(String text) {
         if (text == null || text.isEmpty()) return 1.0;
         try {
-            double val = Double.parseDouble(text.replaceAll("[^0-9,.]", "").replace(",", "."));
-            String lower = text.toLowerCase();
-            if (lower.contains("ml")) return val / 1000.0;
-            if (lower.contains("cl")) return val / 100.0;
-            return val;
+            return calculateQuantity(text);
         } catch (Exception e) {
             return 1.0;
         }
     }
 
+    private double calculateQuantity(String text) {
+        double parsedValue = Double.parseDouble(text.replaceAll("[^0-9,.]", "").replace(",", "."));
+        String lowerCaseText = text.toLowerCase();
+        if (lowerCaseText.contains("ml")) return parsedValue / 1000.0;
+        if (lowerCaseText.contains("cl")) return parsedValue / 100.0;
+        return parsedValue;
+    }
+
     private String parseUnit(String text) {
-        String lower = text.toLowerCase();
-        if (lower.contains("ml") || lower.contains("cl") || lower.contains(" l") || lower.contains("litro")) return "l";
-        if (lower.contains("kg") || lower.contains("kilo")) return "kg";
-        if (lower.matches(".*\\d\\s?g($|\\s).*") || lower.contains("gramo") || lower.endsWith("g")) return "g";
+        String lowerCaseText = text.toLowerCase();
+        if (lowerCaseText.contains("ml") || lowerCaseText.contains("cl") || lowerCaseText.contains(" l") || lowerCaseText.contains("litro")) return "l";
+        if (lowerCaseText.contains("kg") || lowerCaseText.contains("kilo")) return "kg";
+        if (lowerCaseText.matches(".*\\d\\s?g($|\\s).*") || lowerCaseText.contains("gramo") || lowerCaseText.endsWith("g")) return "g";
         return "ud";
     }
 
     private String extractBrand(String name) {
         String[] words = name.split(" ");
-        StringBuilder brand = new StringBuilder();
+        StringBuilder brandBuilder = new StringBuilder();
         for (String word : words) {
-            if (word.equals(word.toUpperCase()) && word.length() > 1 && word.matches("[A-ZÁÉÍÓÚÑ0-9]+")) {
-                if (brand.length() > 0) brand.append(" ");
-                brand.append(word);
+            if (isUpperCaseWord(word)) {
+                if (brandBuilder.length() > 0) brandBuilder.append(" ");
+                brandBuilder.append(word);
             } else break;
         }
-        return brand.length() > 0 ? brand.toString() : "GENÉRICO";
+        return brandBuilder.length() > 0 ? brandBuilder.toString() : "GENÉRICO";
+    }
+
+    private boolean isUpperCaseWord(String word) {
+        return word.equals(word.toUpperCase()) && word.length() > 1 && word.matches("[A-ZÁÉÍÓÚÑ0-9]+");
     }
 
     private String cleanName(String fullName, String brand) {
-        String cleaned = fullName.replace(brand, "").trim().toLowerCase();
-        cleaned = cleaned.replaceAll("(?i)pack de \\d+|botella de|uds\\.?|\\d+[\\.,]?\\d*\\s?(ml|l|g|kg|cl)|\\d+\\s?x\\s?\\d+[\\.,]?\\d*|[0-9]+|[\\.,\\(\\)\\-x]", "");
-        cleaned = cleaned.replaceAll("\\s+", " ").trim();
-        return cleaned.isEmpty() ? fullName.toLowerCase() : cleaned;
-    }
-
-    private Map<String, String> loadCategories() {
-        Map<String, String> categoryMap = new LinkedHashMap<>();
-        try {
-            List<String> lines = Files.readAllLines(Paths.get(this.categoriesPath));
-            for (String line : lines) {
-                if (line.trim().isEmpty()) continue;
-
-                String[] parts = line.split(":");
-                if (parts.length == 2) {
-                    categoryMap.put(parts[0].trim(), parts[1].trim());
-                } else {
-                    categoryMap.put(line.trim(), line.trim());
-                }
-            }
-        } catch (IOException e) {
-            logger.severe("Critical error reading categories file: " + e.getMessage());
-        }
-        return categoryMap;
-    }
-
-    private void navigateToHome(WebDriver driver) {
-        try {
-            driver.get(this.baseUrl);
-            pause(3000);
-        } catch (Exception ignored) {}
-    }
-
-    private void acceptCookies(WebDriver driver) {
-        try {
-            WebElement btn = driver.findElement(By.id("onetrust-accept-btn-handler"));
-            if (btn.isDisplayed()) btn.click();
-        } catch (Exception ignored) {}
+        String cleanedName = fullName.replace(brand, "").trim().toLowerCase();
+        cleanedName = cleanedName.replaceAll("(?i)pack de \\d+|botella de|uds\\.?|\\d+[\\.,]?\\d*\\s?(ml|l|g|kg|cl)|\\d+\\s?x\\s?\\d+[\\.,]?\\d*|[0-9]+|[\\.,\\(\\)\\-x]", "");
+        cleanedName = cleanedName.replaceAll("\\s+", " ").trim();
+        return cleanedName.isEmpty() ? fullName.toLowerCase() : cleanedName;
     }
 
     private void scrollDown(WebDriver driver) {
         try {
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("window.scrollBy(0, 1000);");
+            JavascriptExecutor javascriptExecutor = (JavascriptExecutor) driver;
+            javascriptExecutor.executeScript("window.scrollBy(0, 1000);");
         } catch (Exception ignored) {}
     }
 
-    private void pause(int ms) {
+    private void pause(int milliseconds) {
         try {
-            Thread.sleep(ms);
+            Thread.sleep(milliseconds);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

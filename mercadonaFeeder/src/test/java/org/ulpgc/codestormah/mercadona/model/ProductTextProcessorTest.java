@@ -1,36 +1,23 @@
 package org.ulpgc.codestormah.mercadona.model;
 
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ProductTextProcessorTest {
 
     @Test
     void shouldNormalizeNameRemovingBrandAndSymbols() {
-
-        String input = "HACENDADO Vino Tinto!!!";
-
-        String result = ProductTextProcessor.normalizeName(input);
-
+        String result = ProductTextProcessor.normalizeName("HACENDADO Vino Tinto!!!");
         assertEquals("vino tinto", result);
     }
 
     @Test
     void shouldDetectHacendadoBrand() {
-
-        String input = "HACENDADO Cola Zero";
-
-        assertEquals("Hacendado",
-                ProductTextProcessor.extractBrand(input));
+        assertEquals("Hacendado", ProductTextProcessor.extractBrand("HACENDADO Cola Zero"));
     }
 
     @Test
     void shouldReturnOtherBrandIfNotHacendado() {
-
-        String input = "Coca Cola Zero";
-
-        assertEquals("Other",
-                ProductTextProcessor.extractBrand(input));
+        assertEquals("Other", ProductTextProcessor.extractBrand("Coca Cola Zero"));
     }
 }

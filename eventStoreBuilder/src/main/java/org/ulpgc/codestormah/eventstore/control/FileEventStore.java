@@ -12,11 +12,8 @@ import java.time.format.DateTimeFormatter;
 
 public class FileEventStore {
 
-    private static final Logger logger = LoggerFactory.getLogger(FileEventStore.class);
-
-    private static final DateTimeFormatter FORMATTER =
-            DateTimeFormatter.ofPattern("yyyyMMdd");
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileEventStore.class);
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     private final Path root;
     private final Clock clock;
 
@@ -27,16 +24,16 @@ public class FileEventStore {
 
     public void dispatch(String event, String topic, String source) {
         try {
-            Path directory = buildDirectory(topic, source);
-            Files.createDirectories(directory);
-
-            Path file = directory.resolve(buildFileName());
-
-            appendEvent(file, event);
-
+            processDispatch(event, topic, source);
         } catch (IOException e) {
-            logger.error("Error writing event to store (topic={}, source={})", topic, source, e);
+            LOGGER.error("Error writing event to store", e);
         }
+    }
+
+    private void processDispatch(String e, String t, String s) throws IOException {
+        Path directory = buildDirectory(t, s);
+        Files.createDirectories(directory);
+        appendEvent(directory.resolve(buildFileName()), e);
     }
 
     private Path buildDirectory(String topic, String source) {
@@ -48,12 +45,7 @@ public class FileEventStore {
     }
 
     private void appendEvent(Path file, String event) throws IOException {
-        Files.writeString(
-                file,
-                event + System.lineSeparator(),
-                StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.APPEND
-        );
+        Files.writeString(file, event + System.lineSeparator(),
+                StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     }
 }

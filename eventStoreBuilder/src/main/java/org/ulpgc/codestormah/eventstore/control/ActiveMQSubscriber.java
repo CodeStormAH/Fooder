@@ -6,46 +6,63 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import javax.jms.*;
 
 public class ActiveMQSubscriber {
-    private final String brokerUrl;
-    private final String topicName;
-    private final String source;
+
+    public record Config(String brokerUrl, String topic, String source) {}
+
+    private final Config config;
     private final FileEventStore store;
-
     private final Gson gson = new Gson();
-
     private Connection connection;
     private Session session;
     private MessageConsumer consumer;
 
-    public ActiveMQSubscriber(String brokerUrl, String topicName, String source, FileEventStore store) {
-        this.brokerUrl = brokerUrl;
-        this.topicName = topicName;
-        this.source = source;
+    public ActiveMQSubscriber(Config config, FileEventStore store) {
+        this.config = config;
         this.store = store;
     }
 
     public void start() {
-        while (true) {
-            try {
-                connect();
-                listen();
-                break;
-            } catch (Exception e) {
-                logError("Connection failed. Retrying...", e);
-                sleep();
-            }
+        while (!attemptConnection()) {
+            sleep();
         }
+    }
+
+    private boolean attemptConnection() {
+        try {
+            return executeConnection();
+        } catch (Exception e) {
+            return handleConnectionError(e);
+        }
+    }
+
+    private boolean executeConnection() throws JMSException {
+        connect();
+        listen();
+        return true;
     }
 
     private void connect() throws JMSException {
         connection = createConnection();
         connection.setClientID(buildClientId());
         connection.start();
+        createSessionAndConsumer();
+    }
 
+    private Connection createConnection() throws JMSException {
+        return new ActiveMQConnectionFactory(config.brokerUrl()).createConnection();
+    }
+
+    private String buildClientId() {
+        return "StoreBuilder_" + config.source() + "_" + config.topic();
+    }
+
+    private void createSessionAndConsumer() throws JMSException {
         session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = session.createTopic(topicName);
+        consumer = session.createDurableSubscriber(session.createTopic(config.topic()), buildSubscriptionName());
+    }
 
-        consumer = session.createDurableSubscriber(topic, buildSubscriptionName());
+    private String buildSubscriptionName() {
+        return "Durable_" + config.source() + "_" + config.topic();
     }
 
     private void listen() throws JMSException {
@@ -54,47 +71,29 @@ public class ActiveMQSubscriber {
 
     private void handleMessage(Message message) {
         try {
-            TextMessage textMessage = extractTextMessage(message);
-
-            JsonObject json = parse(textMessage.getText());
-            store.dispatch(json.toString(), topicName, source);
-
+            processMessage(message);
         } catch (Exception e) {
             logError("Error processing message", e);
         }
     }
 
-    private TextMessage extractTextMessage(Message message) {
-        if (message instanceof TextMessage textMessage) {
-            return textMessage;
-        }
-        throw new IllegalArgumentException(
-                "Unsupported JMS message type: " + message.getClass()
-        );
+    private void processMessage(Message m) throws Exception {
+        JsonObject json = parse(extractTextMessage(m).getText());
+        store.dispatch(json.toString(), config.topic(), config.source());
+    }
+
+    private TextMessage extractTextMessage(Message m) {
+        if (m instanceof TextMessage tm) return tm;
+        throw new IllegalArgumentException("Unsupported JMS type: " + m.getClass());
     }
 
     private JsonObject parse(String text) {
         return gson.fromJson(text, JsonObject.class);
     }
 
-    private Connection createConnection() throws JMSException {
-        return new ActiveMQConnectionFactory(brokerUrl).createConnection();
-    }
-
-    private String buildClientId() {
-        return "StoreBuilder_" + source + "_" + topicName;
-    }
-
-    private String buildSubscriptionName() {
-        return "Durable_" + source + "_" + topicName;
-    }
-
-    private void sleep() {
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException ignored) {
-            Thread.currentThread().interrupt();
-        }
+    private boolean handleConnectionError(Exception e) {
+        logError("Connection failed. Retrying...", e);
+        return false;
     }
 
     private void logError(String msg, Exception e) {
@@ -102,13 +101,11 @@ public class ActiveMQSubscriber {
         System.err.println(e.getMessage());
     }
 
-    public void close() {
+    private void sleep() {
         try {
-            if (consumer != null) consumer.close();
-            if (session != null) session.close();
-            if (connection != null) connection.close();
-        } catch (JMSException e) {
-            logError("Error closing JMS resources", e);
+            Thread.sleep(5000);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
         }
     }
 }

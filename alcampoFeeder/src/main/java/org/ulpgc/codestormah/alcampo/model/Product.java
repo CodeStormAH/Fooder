@@ -1,12 +1,13 @@
 package org.ulpgc.codestormah.alcampo.model;
 
 public class Product {
+
     private final String id;
     private final String name;
     private final String normalizedName;
     private final String brand;
     private final String category;
-    private final double unitPrice; // Este es el precio del artículo/pack (ej: 1.3)
+    private final double unitPrice;
     private final String unit;
     private final double quantity;
     private final boolean isOnSale;
@@ -24,7 +25,6 @@ public class Product {
         this.isOnSale = isOnSale;
     }
 
-    // Getters actualizados
     public String getId() { return id; }
     public String getName() { return name; }
     public String getNormalizedName() { return normalizedName; }
@@ -35,4 +35,3 @@ public class Product {
     public double getQuantity() { return quantity; }
     public boolean isOnSale() { return isOnSale; }
 }
-

@@ -267,7 +267,8 @@ Este componente se encarga exclusivamente de la captura y extracción automatiza
 * **org.ulpgc.codestormah.alcampo.model**
 * `Product`: Modelo de datos interno que representa la estructura base del producto capturado en el contexto de Alcampo.
 
-<img width="1471" height="744" alt="alcamposi" src="https://github.com/user-attachments/assets/bd643d66-345f-410a-8e82-52300a179dce" />
+<img width="1305" height="624" alt="Captura_de_pantalla_2026-05-19_194925" src="https://github.com/user-attachments/assets/8e19c898-05de-4115-9a37-04ecf16314ad" />
+
 
 
 #### 2. Módulo: mercadonaFeeder
@@ -293,8 +294,8 @@ Componente optimizado para la ingesta de datos a gran velocidad mediante el cons
 * `Product`: Modelo orientado al dominio que mapea las propiedades nativas de la API de Mercadona.
 * `ProductTextProcessor`: Utilidad complementaria que limpia, formatea y normaliza las cadenas de caracteres de los nombres y marcas del supermercado.
 
+<img width="1475" height="744" alt="Captura_de_pantalla_2026-05-19_193919" src="https://github.com/user-attachments/assets/dd68ab71-cdaf-4654-9d91-dafe91b314f5" />
 
-<img width="1467" height="738" alt="mercadona" src="https://github.com/user-attachments/assets/d6bc7ff7-ac9d-4fae-8135-8abc5fccc541" />
 
 
 #### 3. Módulo: eventStoreBuilder
@@ -332,9 +333,10 @@ Es el núcleo inteligente del sistema (Unidad de Negocio). Se encarga de procesa
 
 
 * **org.ulpgc.codestormah.business.view**
-* `ApiController`: Define e inicializa el servidor HTTP embebido utilizando **Javalin 5**. Configura el plugin de CORS nativo mediante `config.plugins.enableCors` otorgando permisos de acceso a cualquier cliente web externo (`anyHost()`). Mapea de forma limpia los verbos HTTP `GET` hacia las funciones atómicas del `ProductStore` y del `RecommendationStore`, gestionando los códigos de estado HTTP (como el `404 Not Found`).
+* `UIService`: Define e inicializa el servidor HTTP embebido utilizando **Javalin 5**. Configura el plugin de CORS nativo mediante `config.plugins.enableCors` otorgando permisos de acceso a cualquier cliente web externo (`anyHost()`). Mapea de forma limpia los verbos HTTP `GET` hacia las funciones atómicas del `ProductStore` y del `RecommendationStore`, gestionando los códigos de estado HTTP (como el `404 Not Found`).
 
-<img width="1303" height="878" alt="Bussines-unit" src="https://github.com/user-attachments/assets/7f002b17-e0b8-4153-a99b-89aa3808763b" />
+<img width="1264" height="849" alt="Captura_de_pantalla_2026-05-19_203619" src="https://github.com/user-attachments/assets/32a8da3f-cb51-4e55-b2eb-032b27bf5d27" />
+
 
 
 ## Principios y Patrones de Diseño Aplicados en cada Módulo
