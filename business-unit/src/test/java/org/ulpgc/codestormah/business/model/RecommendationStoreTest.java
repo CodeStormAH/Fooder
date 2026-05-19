@@ -3,71 +3,36 @@ package org.ulpgc.codestormah.business.model;
 import org.junit.jupiter.api.Test;
 import org.ulpgc.codestormah.business.control.ProductStore;
 import org.ulpgc.codestormah.business.control.RecommendationStore;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class RecommendationStoreTest {
 
     @Test
     void shouldGenerateRecommendationBasedOnLowestAveragePrice() {
-
-        ProductStore store = new ProductStore();
-        RecommendationStore recommendationStore = new RecommendationStore(store);
-
-        Product p1 = createProduct("1", "mercadona", "milk", "dairy", 2.0);
-        Product p2 = createProduct("2", "mercadona", "milk", "dairy", 3.0);
-
-        Product p3 = createProduct("3", "carrefour", "milk", "dairy", 1.0);
-        Product p4 = createProduct("4", "carrefour", "milk", "dairy", 1.5);
-
-        store.addProduct(p1);
-        store.addProduct(p2);
-        store.addProduct(p3);
-        store.addProduct(p4);
-
-        recommendationStore.update("dairy");
-
-        Recommendation rec = recommendationStore.get("dairy");
-
-        assertNotNull(rec);
-        assertEquals("dairy", rec.getCategory());
-
-        // Carrefour tiene media más baja (1.25 vs 2.5)
-        assertEquals("carrefour", rec.getRecommendedSource());
+        RecommendationStore recStore = setupStoreWithProducts();
+        recStore.update("dairy");
+        assertEquals("dairy", recStore.get("dairy").category());
+        assertEquals("carrefour", recStore.get("dairy").recommendedSource());
     }
 
-    private Product createProduct(
-            String id,
-            String ss,
-            String name,
-            String category,
-            double price
-    ) {
-        Product p = new Product();
+    private RecommendationStore setupStoreWithProducts() {
+        ProductStore store = new ProductStore();
+        populateMercadona(store);
+        populateCarrefour(store);
+        return new RecommendationStore(store);
+    }
 
-        try {
-            var idF = Product.class.getDeclaredField("id");
-            var ssF = Product.class.getDeclaredField("ss");
-            var nameF = Product.class.getDeclaredField("name");
-            var catF = Product.class.getDeclaredField("category");
-            var priceF = Product.class.getDeclaredField("unitPrice");
+    private void populateMercadona(ProductStore s) {
+        s.addProduct(createProduct("1", "mercadona", 2.0));
+        s.addProduct(createProduct("2", "mercadona", 3.0));
+    }
 
-            idF.setAccessible(true);
-            ssF.setAccessible(true);
-            nameF.setAccessible(true);
-            catF.setAccessible(true);
-            priceF.setAccessible(true);
+    private void populateCarrefour(ProductStore s) {
+        s.addProduct(createProduct("3", "carrefour", 1.0));
+        s.addProduct(createProduct("4", "carrefour", 1.5));
+    }
 
-            idF.set(p, id);
-            ssF.set(p, ss);
-            nameF.set(p, name);
-            catF.set(p, category);
-            priceF.set(p, price);
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return p;
+    private Product createProduct(String id, String ss, double price) {
+        return new Product("ts", ss, id, "milk", "m", "b", "dairy", price, "u", 1.0, false);
     }
 }
