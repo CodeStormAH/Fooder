@@ -25,7 +25,7 @@ public class DatabaseAlcampoStore implements AlcampoStore {
         try {
             executeStoreTransaction(products);
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Error almacenando datos: " + e.getMessage(), e);
+            logger.log(Level.SEVERE, "Error storing data: " + e.getMessage(), e);
         }
     }
 
@@ -36,7 +36,7 @@ public class DatabaseAlcampoStore implements AlcampoStore {
             saveProducts(products, connection);
             savePrices(products, connection);
             connection.commit();
-            logger.info("Almacenados " + products.size() + " productos y precios en: " + this.jdbcUrl);
+            logger.info("Stored " + products.size() + " products and prices in: " + this.jdbcUrl);
         }
     }
 
