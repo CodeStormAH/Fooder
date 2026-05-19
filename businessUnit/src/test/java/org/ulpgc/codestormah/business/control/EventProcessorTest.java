@@ -1,15 +1,42 @@
 package org.ulpgc.codestormah.business.control;
 
-import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
 import org.ulpgc.codestormah.business.model.Product;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class EventProcessorTest {
 
+    @Test
+    void shouldProcessValidProduct() {
+        TestEnv env = setupEnv();
+        env.proc().processProduct(createProduct("12345", "Aceites"));
+        assertEquals(1, env.store().count);
+        assertEquals(1, env.recStore().updates);
+    }
+
+    @Test
+    void shouldIgnoreInvalidProduct() {
+        TestEnv env = setupEnv();
+        env.proc().processProduct(null);
+        env.proc().processProduct(createProduct(null, "Aceites"));
+        assertEquals(0, env.store().count);
+        assertEquals(0, env.recStore().updates);
+    }
+
+    private TestEnv setupEnv() {
+        FakeProductStore s = new FakeProductStore();
+        FakeRecommendationStore r = new FakeRecommendationStore(s);
+        return new TestEnv(s, r, new EventProcessor(s, r));
+    }
+
+    private Product createProduct(String id, String cat) {
+        return new Product("ts", "ss", id, "name", "norm", "brand", cat, 2.5, "ud", 1.0, false);
+    }
+
+    private record TestEnv(FakeProductStore store, FakeRecommendationStore recStore, EventProcessor proc) {}
+
     static class FakeProductStore extends ProductStore {
         int count = 0;
-
         @Override
         public void addProduct(Product product) {
             count++;
@@ -18,7 +45,6 @@ class EventProcessorTest {
 
     static class FakeRecommendationStore extends RecommendationStore {
         int updates = 0;
-
         public FakeRecommendationStore(ProductStore store) {
             super(store);
         }
@@ -26,43 +52,5 @@ class EventProcessorTest {
         public void update(String category) {
             updates++;
         }
-    }
-
-    @Test
-    void shouldProcessValidProduct() {
-        FakeProductStore store = new FakeProductStore();
-        FakeRecommendationStore recStore = new FakeRecommendationStore(store);
-        EventProcessor processor = new EventProcessor(store, recStore);
-        Gson gson = new Gson();
-        String json = """
-                {
-                  "id":"12345",
-                  "category":"Aceites",
-                  "unitPrice":2.5
-                }
-                """;
-        Product validProduct = gson.fromJson(json, Product.class);
-        processor.processProduct(validProduct);
-        assertEquals(1, store.count);
-        assertEquals(1, recStore.updates);
-    }
-
-    @Test
-    void shouldIgnoreInvalidProduct() {
-        FakeProductStore store = new FakeProductStore();
-        FakeRecommendationStore recStore = new FakeRecommendationStore(store);
-        EventProcessor processor = new EventProcessor(store, recStore);
-        Gson gson = new Gson();
-        processor.processProduct(null);
-        String jsonWithoutId = """
-                {
-                  "category":"Aceites",
-                  "unitPrice":2.5
-                }
-                """;
-        Product productWithoutId = gson.fromJson(jsonWithoutId, Product.class);
-        processor.processProduct(productWithoutId);
-        assertEquals(0, store.count);
-        assertEquals(0, recStore.updates);
     }
 }

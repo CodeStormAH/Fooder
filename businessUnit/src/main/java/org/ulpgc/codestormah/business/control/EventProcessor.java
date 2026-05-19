@@ -12,57 +12,64 @@ import java.util.stream.Stream;
 
 public class EventProcessor {
 
-    private static final Logger logger = LoggerFactory.getLogger(EventProcessor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EventProcessor.class);
     private final ProductStore productStore;
     private final RecommendationStore recommendationStore;
-    private final Gson gson;
+    private final Gson gson = new Gson();
 
     public EventProcessor(ProductStore productStore, RecommendationStore recommendationStore) {
         this.productStore = productStore;
         this.recommendationStore = recommendationStore;
-        this.gson = new Gson();
     }
 
     public void processProduct(Product product) {
         try {
-            if (product != null && product.getId() != null) {
-                productStore.addProduct(product);
-                recommendationStore.update(product.getCategory());
-            }
+            executeProductProcessing(product);
         } catch (Exception e) {
-            logger.error("Error processing Product object: {}", product, e);
+            LOGGER.error("Error processing Product object: {}", product, e);
         }
+    }
+
+    private void executeProductProcessing(Product p) {
+        if (p != null && p.id() != null) storeAndRecommend(p);
+    }
+
+    private void storeAndRecommend(Product p) {
+        productStore.addProduct(p);
+        recommendationStore.update(p.category());
     }
 
     public void loadHistoricalData(String eventStorePath) {
         Path root = Paths.get(eventStorePath);
-        if (!Files.exists(root)) {
-            logger.warn("No historical event store found at path: {}", eventStorePath);
-            return;
-        }
+        if (Files.exists(root)) tryWalkPath(root);
+        else LOGGER.warn("No historical event store found at path: {}", eventStorePath);
+    }
+
+    private void tryWalkPath(Path root) {
         try (Stream<Path> paths = Files.walk(root)) {
-            paths.filter(p -> p.toString().endsWith(".events"))
-                    .sorted()
-                    .forEach(this::loadEventsFromFile);
+            processEventPaths(paths);
         } catch (IOException e) {
-            logger.error("Error walking event store directory: {}", eventStorePath, e);
+            LOGGER.error("Error walking event store directory", e);
         }
+    }
+
+    private void processEventPaths(Stream<Path> paths) {
+        paths.filter(p -> p.toString().endsWith(".events")).sorted().forEach(this::loadEventsFromFile);
     }
 
     private void loadEventsFromFile(Path path) {
         try (Stream<String> lines = Files.lines(path, StandardCharsets.UTF_8)) {
             lines.forEach(this::parseAndProcessLine);
         } catch (IOException e) {
-            logger.error("Error reading event file: {}", path, e);
+            LOGGER.error("Error reading event file: {}", path, e);
         }
     }
 
     private void parseAndProcessLine(String line) {
         try {
-            Product product = gson.fromJson(line, Product.class);
-            processProduct(product);
+            processProduct(gson.fromJson(line, Product.class));
         } catch (Exception ex) {
-            logger.error("Error parsing historical JSON line: {}", line, ex);
+            LOGGER.error("Error parsing historical JSON line: {}", line, ex);
         }
     }
 }
