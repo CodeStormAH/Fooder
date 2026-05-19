@@ -23,6 +23,7 @@ public class ProductStore {
         List<Product> fullHistory = history.getOrDefault(productId + "-" + source, Collections.emptyList());
         if (fullHistory.isEmpty()) return fullHistory;
 
+        fullHistory.sort(Comparator.comparing(Product::getTs));
         List<Product> filteredHistory = new ArrayList<>();
         Product previous = null;
 
