@@ -144,35 +144,43 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
     }
 
     private void executeDrinksFilterLogic(WebDriver driver) {
+        clickBebidasLink(driver);
+        waitForCategoryToLoad(driver);
+    }
+
+    private void clickBebidasLink(WebDriver driver) {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(12));
         WebElement bebidasLink = wait.until(ExpectedConditions.presenceOfElementLocated(
                 By.xpath("//a[@data-test='root-category-link' and contains(normalize-space(), 'Bebidas')]")));
-        JavascriptExecutor javascriptExecutor = (JavascriptExecutor) driver;
-        javascriptExecutor.executeScript("arguments[0].scrollIntoView({block: 'center'});", bebidasLink);
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        js.executeScript("arguments[0].scrollIntoView({block: 'center'});", bebidasLink);
         pause(700);
-        javascriptExecutor.executeScript("arguments[0].click();", bebidasLink);
+        js.executeScript("arguments[0].click();", bebidasLink);
         logger.info("Filter 'Drinks' applied.");
+    }
+
+    private void waitForCategoryToLoad(WebDriver driver) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(12));
         wait.until(ExpectedConditions.urlContains("sublocationId"));
         wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("[data-test^='fop-wrapper']")));
         pause(1500);
     }
 
     private void extractCategoryProducts(WebDriver driver, String categoryName, Map<String, Product> products) {
-        int currentCategoryCount = 0;
-        int attemptsWithoutNewData = 0;
-        int lastCount = 0;
-        while (attemptsWithoutNewData < 4) {
-            currentCategoryCount += scanPageForProducts(driver, categoryName, products);
-            scrollDown(driver);
-            pause(SCROLL_WAIT_MS);
-            if (currentCategoryCount == lastCount) {
-                attemptsWithoutNewData++;
-            } else {
-                attemptsWithoutNewData = 0;
-                lastCount = currentCategoryCount;
-            }
+        int totalProducts = 0;
+        int retries = 0;
+        while (retries < 4) {
+            int newTotal = totalProducts + scanPageForProducts(driver, categoryName, products);
+            retries = (newTotal == totalProducts) ? retries + 1 : 0;
+            totalProducts = newTotal;
+            scrollDownAndPause(driver);
         }
-        logger.info("Finished category '" + categoryName + "' (" + currentCategoryCount + " products)");
+        logger.info("Finished category '" + categoryName + "' (" + totalProducts + " products)");
+    }
+
+    private void scrollDownAndPause(WebDriver driver) {
+        scrollDown(driver);
+        pause(SCROLL_WAIT_MS);
     }
 
     private int scanPageForProducts(WebDriver driver, String categoryName, Map<String, Product> products) {
@@ -206,18 +214,27 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
 
     private Product createProductFromElement(WebElement element, String name, String categoryName) {
         double unitPrice = fetchPrice(element, "[data-test='fop-price']");
-        String sizeText = getElementText(element, "[data-test='fop-size'] span", "[data-test='fop-size']");
-        if (!sizeText.toLowerCase().matches(".*\\d.*(ml|cl|\\bl\\b|litro|kg|gramo).*")) {
-            sizeText = extractSizeFromName(name);
-        }
+        String sizeText = resolveSizeText(element, name);
         String brand = extractBrand(name);
         String normalizedName = cleanName(name, brand);
-        boolean isSale = !element.findElements(By.cssSelector(".promotion-container")).isEmpty();
-        String deterministicId = UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8)).toString();
+        boolean isSale = checkIfOnSale(element);
+        String id = UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8)).toString();
         return new Product(
-                deterministicId, name, normalizedName, brand, categoryName,
+                id, name, normalizedName, brand, categoryName,
                 unitPrice, parseUnit(sizeText), parseQuantity(sizeText), isSale
         );
+    }
+
+    private String resolveSizeText(WebElement element, String name) {
+        String sizeText = getElementText(element, "[data-test='fop-size'] span", "[data-test='fop-size']");
+        if (!sizeText.toLowerCase().matches(".*\\d.*(ml|cl|\\bl\\b|litro|kg|gramo).*")) {
+            return extractSizeFromName(name);
+        }
+        return sizeText;
+    }
+
+    private boolean checkIfOnSale(WebElement element) {
+        return !element.findElements(By.cssSelector(".promotion-container")).isEmpty();
     }
 
     private String extractSizeFromName(String name) {
