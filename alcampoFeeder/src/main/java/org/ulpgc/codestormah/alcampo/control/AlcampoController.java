@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 
 public class AlcampoController {
     private static final Logger logger = Logger.getLogger(AlcampoController.class.getName());
-
     private final AlcampoFeeder feeder;
     private final AlcampoStore store;
 
@@ -22,7 +21,6 @@ public class AlcampoController {
 
     public void startScheduled(long initialDelay, long interval, TimeUnit unit) {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
         scheduler.scheduleAtFixedRate(
                 () -> {
                     try {
@@ -41,7 +39,6 @@ public class AlcampoController {
     public void execute() {
         logger.info("Starting Alcampo data collection...");
         List<Product> products = feeder.fetchProducts();
-
         if (!products.isEmpty()) {
             logger.info("Collected " + products.size() + " products. Storing data...");
             store.store(products);

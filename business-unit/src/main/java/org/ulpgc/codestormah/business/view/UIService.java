@@ -7,22 +7,21 @@ import org.ulpgc.codestormah.business.control.ProductStore;
 import org.ulpgc.codestormah.business.control.RecommendationStore;
 import org.ulpgc.codestormah.business.model.Recommendation;
 
-public class ApiController {
+public class UIService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ApiController.class);
+    private static final Logger logger = LoggerFactory.getLogger(UIService.class);
 
     private final ProductStore productStore;
     private final int port;
     private final RecommendationStore recommendationStore;
 
-    public ApiController(ProductStore productStore, RecommendationStore recommendationStore, int port) {
+    public UIService(ProductStore productStore, RecommendationStore recommendationStore, int port) {
         this.productStore = productStore;
         this.recommendationStore = recommendationStore;
         this.port = port;
     }
 
     public void start() {
-
         Javalin app = Javalin.create(config -> {
             config.plugins.enableCors(cors -> {
                 cors.add(it -> it.anyHost());

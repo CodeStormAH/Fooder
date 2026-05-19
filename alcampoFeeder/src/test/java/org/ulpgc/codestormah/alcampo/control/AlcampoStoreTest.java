@@ -10,11 +10,9 @@ class AlcampoStoreTest {
 
     @Test
     void should_accept_products() {
-
         AlcampoStore store = products -> {
             assertNotNull(products);
         };
-
         store.store(List.of());
     }
 }

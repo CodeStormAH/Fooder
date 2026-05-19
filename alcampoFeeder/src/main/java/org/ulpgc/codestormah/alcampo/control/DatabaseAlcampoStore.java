@@ -26,9 +26,7 @@ public class DatabaseAlcampoStore implements AlcampoStore {
             saveProducts(products, conn);
             savePrices(products, conn);
             conn.commit();
-
             LOGGER.info("Almacenados " + products.size() + " productos y precios en: " + this.jdbcUrl);
-
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error almacenando datos: " + e.getMessage(), e);
         }
@@ -39,7 +37,6 @@ public class DatabaseAlcampoStore implements AlcampoStore {
             st.execute("CREATE TABLE IF NOT EXISTS products (" +
                     "id TEXT PRIMARY KEY, name TEXT, normalized_name TEXT, " +
                     "brand TEXT, category TEXT, quantity REAL, unit TEXT)");
-
             st.execute("CREATE TABLE IF NOT EXISTS prices (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, " +
                     "unit_price REAL, is_on_sale BOOLEAN, date TEXT DEFAULT (datetime('now')), " +

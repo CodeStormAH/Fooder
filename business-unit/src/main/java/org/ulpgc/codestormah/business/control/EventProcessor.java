@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 public class EventProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(EventProcessor.class);
-
     private final ProductStore productStore;
     private final RecommendationStore recommendationStore;
     private final Gson gson;
@@ -24,44 +23,46 @@ public class EventProcessor {
         this.gson = new Gson();
     }
 
-    public void processJson(String json) {
+    public void processProduct(Product product) {
         try {
-            Product product = gson.fromJson(json, Product.class);
-
             if (product != null && product.getId() != null) {
                 productStore.addProduct(product);
                 recommendationStore.update(product.getCategory());
             }
-
         } catch (Exception e) {
-            logger.error("Error parsing JSON event: {}", json, e);
+            logger.error("Error processing Product object: {}", product, e);
         }
     }
 
     public void loadHistoricalData(String eventStorePath) {
         Path root = Paths.get(eventStorePath);
-
         if (!Files.exists(root)) {
             logger.warn("No historical event store found at path: {}", eventStorePath);
             return;
         }
-
         try (Stream<Path> paths = Files.walk(root)) {
-
             paths.filter(p -> p.toString().endsWith(".events"))
                     .sorted()
-                    .forEach(path -> {
-
-                        try (Stream<String> lines = Files.lines(path, StandardCharsets.UTF_8)) {
-                            lines.forEach(this::processJson);
-
-                        } catch (IOException e) {
-                            logger.error("Error reading event file: {}", path, e);
-                        }
-                    });
-
+                    .forEach(this::loadEventsFromFile);
         } catch (IOException e) {
             logger.error("Error walking event store directory: {}", eventStorePath, e);
+        }
+    }
+
+    private void loadEventsFromFile(Path path) {
+        try (Stream<String> lines = Files.lines(path, StandardCharsets.UTF_8)) {
+            lines.forEach(this::parseAndProcessLine);
+        } catch (IOException e) {
+            logger.error("Error reading event file: {}", path, e);
+        }
+    }
+
+    private void parseAndProcessLine(String line) {
+        try {
+            Product product = gson.fromJson(line, Product.class);
+            processProduct(product);
+        } catch (Exception ex) {
+            logger.error("Error parsing historical JSON line: {}", line, ex);
         }
     }
 }

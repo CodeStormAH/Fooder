@@ -35,7 +35,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
     public List<Product> fetchProducts() {
         Map<String, String> categories = loadCategories();
         if (categories.isEmpty()) return new ArrayList<>();
-
         return executeScrapingSession(categories);
     }
 
@@ -62,9 +61,7 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         for (Map.Entry<String, String> entry : categories.entrySet()) {
             String categoryName = entry.getKey();
             String searchTerm = entry.getValue();
-
             if (categoryName.isBlank() || searchTerm.isBlank()) continue;
-
             logger.info("Searching for: '" + searchTerm + "' (Saving as Category: '" + categoryName + "')");
             scrapeCategory(driver, categoryName, searchTerm, products);
         }
@@ -84,12 +81,10 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             WebElement searchBar = wait.until(ExpectedConditions.visibilityOfElementLocated(
                     By.cssSelector("input[placeholder*='Buscar'], input[type='search']")
             ));
-
             searchBar.clear();
             searchBar.sendKeys(searchTerm);
             searchBar.sendKeys(Keys.ENTER);
             pause(SEARCH_WAIT_MS);
-
         } catch (Exception e) {
             logger.log(Level.SEVERE,
                     "Search error for '" + searchTerm + "': " + e.getMessage(), e);
@@ -102,19 +97,14 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             WebElement bebidasLink = wait.until(ExpectedConditions.presenceOfElementLocated(
                     By.xpath("//a[@data-test='root-category-link' and contains(normalize-space(), 'Bebidas')]")
             ));
-
             ((JavascriptExecutor) driver)
                     .executeScript("arguments[0].scrollIntoView({block: 'center'});", bebidasLink);
-
             pause(700);
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", bebidasLink);
-
             logger.info("Filter 'Drinks' applied.");
-
             wait.until(ExpectedConditions.urlContains("sublocationId"));
             wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector("[data-test^='fop-wrapper']")));
             pause(1500);
-
         } catch (Exception e) {
             logger.warning("Drink filter does not found");
         }
@@ -124,14 +114,11 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         int currentCategoryCount = 0;
         int attemptsWithoutNewData = 0;
         int lastCount = 0;
-
         while (attemptsWithoutNewData < 4) {
             int addedInThisCycle = scanPageForProducts(driver, categoryName, products, currentCategoryCount);
             currentCategoryCount += addedInThisCycle;
-
             scrollDown(driver);
             pause(SCROLL_WAIT_MS);
-
             if (currentCategoryCount == lastCount) {
                 attemptsWithoutNewData++;
             } else {
@@ -139,7 +126,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
                 lastCount = currentCategoryCount;
             }
         }
-
         logger.info("Finished category '" + categoryName + "' (" + currentCategoryCount + " products)");
     }
 
@@ -160,7 +146,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         try {
             String fullName = element.findElement(By.cssSelector("[data-test='fop-title']")).getText();
             if (fullName.isEmpty() || products.containsKey(fullName)) return false;
-
             products.put(fullName, createProductFromElement(element, fullName, categoryName));
             return true;
         } catch (Exception e) {
@@ -182,12 +167,10 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
         if (!sizeText.toLowerCase().matches(".*\\d.*(ml|cl|\\bl\\b|litro|kg|gramo).*")) {
             sizeText = extractSizeFromName(name);
         }
-
         String brand = extractBrand(name);
         String normalizedName = cleanName(name, brand);
         boolean isSale = !el.findElements(By.cssSelector(".promotion-container")).isEmpty();
         String deterministicId = UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8)).toString();
-
         return new Product(
                 deterministicId, name, normalizedName,
                 brand, categoryName, unitPrice, parseUnit(sizeText),
@@ -271,7 +254,6 @@ public class AlcampoScraperFeeder implements AlcampoFeeder {
             List<String> lines = Files.readAllLines(Paths.get(this.categoriesPath));
             for (String line : lines) {
                 if (line.trim().isEmpty()) continue;
-
                 String[] parts = line.split(":");
                 if (parts.length == 2) {
                     categoryMap.put(parts[0].trim(), parts[1].trim());

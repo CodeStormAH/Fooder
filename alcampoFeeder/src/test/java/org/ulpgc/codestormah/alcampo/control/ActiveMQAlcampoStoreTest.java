@@ -24,6 +24,6 @@ class ActiveMQAlcampoStoreTest {
 
         store.store(products);
 
-        assertTrue(true); // si no rompe, OK
+        assertTrue(true);
     }
 }

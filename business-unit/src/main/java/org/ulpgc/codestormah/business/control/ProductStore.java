@@ -38,13 +38,11 @@ public class ProductStore {
 
     public List<Product> getProductsByCategory(String category) {
         List<Product> filtered = new ArrayList<>();
-
         for (List<Product> productHistory : history.values()) {
             if (!productHistory.isEmpty()) {
                 Product latest = productHistory.stream()
                         .max(Comparator.comparing(Product::getTs))
                         .orElse(null);
-
                 if (latest != null && latest.getCategory().equalsIgnoreCase(category)) {
                     filtered.add(latest);
                 }

@@ -12,9 +12,7 @@ import java.time.Instant;
 import java.util.List;
 
 public class ActiveMQAlcampoStore implements AlcampoStore {
-
     private static final Logger logger = LoggerFactory.getLogger(ActiveMQAlcampoStore.class);
-
     private final String brokerUrl;
     private final String topicName;
     private final String source;
@@ -38,26 +36,19 @@ public class ActiveMQAlcampoStore implements AlcampoStore {
     private void publishToTopic(List<Product> products) throws JMSException {
         Connection connection = createConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
         Topic topic = session.createTopic(topicName);
         MessageProducer producer = session.createProducer(topic);
-
         for (Product product : products) {
             JsonObject event = new JsonObject();
-
             event.addProperty("ts", Instant.now().toString());
             event.addProperty("ss", this.source);
-
             gson.toJsonTree(product)
                     .getAsJsonObject()
                     .entrySet()
                     .forEach(e -> event.add(e.getKey(), e.getValue()));
-
             producer.send(session.createTextMessage(event.toString()));
         }
-
         logger.info("Sent {} to topic: {}", products.size(), topicName);
-
         connection.close();
     }
 
