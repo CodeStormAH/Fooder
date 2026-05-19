@@ -7,7 +7,6 @@ import org.ulpgc.codestormah.alcampo.control.*;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
-
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
@@ -15,24 +14,22 @@ public class Main {
             printUsageError();
             return;
         }
+        startApplication(args);
+    }
 
+    private static void startApplication(String[] args) {
         String targetUrl = args[0];
         String categoriesFilePath = args[1];
         String brokerUrl = args[2];
         String topicName = args[3];
         String source = args[4];
 
-        startApplication(targetUrl, categoriesFilePath, brokerUrl, topicName, source);
-    }
-
-    private static void startApplication(String url, String categoriesPath, String brokerUrl, String topic, String source) {
-
         logger.info("Starting program...");
         logger.info("Starting Publisher (Scraper -> ActiveMQ)...");
-        logger.info("Broker: {} | Topic: {}", brokerUrl, topic);
+        logger.info("Broker: {} | Topic: {}", brokerUrl, topicName);
 
-        AlcampoFeeder feeder = new AlcampoScraperFeeder(url, categoriesPath);
-        AlcampoStore store = new ActiveMQAlcampoStore(brokerUrl, topic, source);
+        AlcampoFeeder feeder = new AlcampoScraperFeeder(targetUrl, categoriesFilePath);
+        AlcampoStore store = new ActiveMQAlcampoStore(brokerUrl, topicName, source);
         AlcampoController controller = new AlcampoController(feeder, store);
 
         controller.startScheduled(0, 24, TimeUnit.HOURS);
@@ -40,6 +37,6 @@ public class Main {
 
     private static void printUsageError() {
         logger.error("Error: Missing configuration parameters.");
-        logger.error("Usage: <URL> <Database_File> <Categories_File>");
+        logger.error("Usage: <URL> <Categories_File> <Broker_URL> <Topic> <Source>");
     }
 }

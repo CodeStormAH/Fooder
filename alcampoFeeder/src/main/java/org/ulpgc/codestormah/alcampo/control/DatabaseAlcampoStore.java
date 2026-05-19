@@ -9,68 +9,76 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DatabaseAlcampoStore implements AlcampoStore {
-
-    private static final Logger LOGGER = Logger.getLogger(DatabaseAlcampoStore.class.getName());
-
+    private static final Logger logger = Logger.getLogger(DatabaseAlcampoStore.class.getName());
+    private static final String CREATE_PRODUCTS_TABLE = "CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, name TEXT, normalized_name TEXT, brand TEXT, category TEXT, quantity REAL, unit TEXT)";
+    private static final String CREATE_PRICES_TABLE = "CREATE TABLE IF NOT EXISTS prices (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, unit_price REAL, is_on_sale BOOLEAN, date TEXT DEFAULT (datetime('now')), FOREIGN KEY(product_id) REFERENCES products(id))";
+    private static final String INSERT_PRODUCT = "INSERT OR REPLACE INTO products (id, name, normalized_name, brand, category, quantity, unit) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    private static final String INSERT_PRICE = "INSERT INTO prices (product_id, unit_price, is_on_sale) VALUES (?, ?, ?)";
     private final String jdbcUrl;
-
-    public DatabaseAlcampoStore(File dbFile) {
-        this.jdbcUrl = "jdbc:sqlite:" + dbFile.getAbsolutePath();
+    public DatabaseAlcampoStore(File databaseFile) {
+        this.jdbcUrl = "jdbc:sqlite:" + databaseFile.getAbsolutePath();
     }
 
     @Override
     public void store(List<Product> products) {
-        try (Connection conn = DriverManager.getConnection(this.jdbcUrl)) {
-            conn.setAutoCommit(false);
-            createSchema(conn);
-            saveProducts(products, conn);
-            savePrices(products, conn);
-            conn.commit();
-            LOGGER.info("Almacenados " + products.size() + " productos y precios en: " + this.jdbcUrl);
+        try {
+            executeStoreTransaction(products);
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error almacenando datos: " + e.getMessage(), e);
+            logger.log(Level.SEVERE, "Error almacenando datos: " + e.getMessage(), e);
         }
     }
 
-    private void createSchema(Connection conn) throws SQLException {
-        try (Statement st = conn.createStatement()) {
-            st.execute("CREATE TABLE IF NOT EXISTS products (" +
-                    "id TEXT PRIMARY KEY, name TEXT, normalized_name TEXT, " +
-                    "brand TEXT, category TEXT, quantity REAL, unit TEXT)");
-            st.execute("CREATE TABLE IF NOT EXISTS prices (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, " +
-                    "unit_price REAL, is_on_sale BOOLEAN, date TEXT DEFAULT (datetime('now')), " +
-                    "FOREIGN KEY(product_id) REFERENCES products(id))");
+    private void executeStoreTransaction(List<Product> products) throws SQLException {
+        try (Connection connection = DriverManager.getConnection(this.jdbcUrl)) {
+            connection.setAutoCommit(false);
+            createSchema(connection);
+            saveProducts(products, connection);
+            savePrices(products, connection);
+            connection.commit();
+            logger.info("Almacenados " + products.size() + " productos y precios en: " + this.jdbcUrl);
         }
     }
 
-    private void saveProducts(List<Product> products, Connection conn) throws SQLException {
-        String sql = "INSERT OR REPLACE INTO products (id, name, normalized_name, brand, category, quantity, unit) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            for (Product p : products) {
-                ps.setString(1, p.getId());
-                ps.setString(2, p.getName());
-                ps.setString(3, p.getNormalizedName());
-                ps.setString(4, p.getBrand());
-                ps.setString(5, p.getCategory());
-                ps.setDouble(6, p.getQuantity());
-                ps.setString(7, p.getUnit());
-                ps.addBatch();
+    private void createSchema(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(CREATE_PRODUCTS_TABLE);
+            statement.execute(CREATE_PRICES_TABLE);
+        }
+    }
+
+    private void saveProducts(List<Product> products, Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(INSERT_PRODUCT)) {
+            for (Product product : products) {
+                bindProductStatement(statement, product);
+                statement.addBatch();
             }
-            ps.executeBatch();
+            statement.executeBatch();
         }
     }
 
-    private void savePrices(List<Product> products, Connection conn) throws SQLException {
-        String sql = "INSERT INTO prices (product_id, unit_price, is_on_sale) VALUES (?, ?, ?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            for (Product p : products) {
-                ps.setString(1, p.getId());
-                ps.setDouble(2, p.getUnitPrice());
-                ps.setBoolean(3, p.isOnSale());
-                ps.addBatch();
+    private void bindProductStatement(PreparedStatement statement, Product product) throws SQLException {
+        statement.setString(1, product.getId());
+        statement.setString(2, product.getName());
+        statement.setString(3, product.getNormalizedName());
+        statement.setString(4, product.getBrand());
+        statement.setString(5, product.getCategory());
+        statement.setDouble(6, product.getQuantity());
+        statement.setString(7, product.getUnit());
+    }
+
+    private void savePrices(List<Product> products, Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(INSERT_PRICE)) {
+            for (Product product : products) {
+                bindPriceStatement(statement, product);
+                statement.addBatch();
             }
-            ps.executeBatch();
+            statement.executeBatch();
         }
+    }
+
+    private void bindPriceStatement(PreparedStatement statement, Product product) throws SQLException {
+        statement.setString(1, product.getId());
+        statement.setDouble(2, product.getUnitPrice());
+        statement.setBoolean(3, product.isOnSale());
     }
 }
