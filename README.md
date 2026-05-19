@@ -205,7 +205,7 @@ Rastrea la evolución temporal de tarifas para un artículo concreto. Gracias al
 
 ### HTML implementado por nosotros
 
-Además del HTML básico que nos proporciona Javalin hemos decicido implementar uno con el objetivo de facicilitar la búsqueda de la información útil dentro de nuestra APP. Para ello hemos creado un fichero index.HTML que genera la siguiente URL: `http://localhost:63342/Fooder/business-unit/index.html?_ijt=8ait8audveoq283uoig34nh1f0&_ij_reload=RELOAD_ON_SAVE`
+Además del HTML básico que nos proporciona Javalin hemos decicido implementar uno con el objetivo de facicilitar la búsqueda de la información útil dentro de nuestra APP. Para ello hemos creado un fichero index.HTML que genera la siguiente URL: `http://localhost:63342/Fooder/businessUnit/index.html?_ijt=n90ersugpups0oskbk0cbcjmq9&_ij_reload=RELOAD_ON_SAVE`
 
 A continuación mostramos capturas de las posibilidades que tiene nuestra APP desde esta ubicación:
 
