@@ -37,14 +37,16 @@ public class ActiveMQAlcampoStore implements AlcampoStore {
     private void publishToTopic(List<Product> products) throws JMSException {
         Connection connection = createConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = session.createTopic(topicName);
-        MessageProducer producer = session.createProducer(topic);
-        for (Product product : products) {
-            String productJson = createProductJson(product);
-            producer.send(session.createTextMessage(productJson));
-        }
+        MessageProducer producer = session.createProducer(session.createTopic(topicName));
+        executeProductsEmission(products, session, producer);
         logger.info("Sent {} to topic: {}", products.size(), topicName);
         connection.close();
+    }
+
+    private void executeProductsEmission(List<Product> products, Session session, MessageProducer producer) throws JMSException {
+        for (Product product : products) {
+            producer.send(session.createTextMessage(createProductJson(product)));
+        }
     }
 
     private String createProductJson(Product product) {
