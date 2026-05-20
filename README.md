@@ -193,19 +193,19 @@ Consulta la vista materializada precalculada de recomendaciones. Este endpoint d
 * **Endpoint:** `GET /api/recommendation/{category}`
 * **Ejemplo de consulta (buscador de explorador web):**
   `http://localhost:7000/api/recommendation/licores`
-* **Respuesta:** `{"category":"licores","recommendedSource":"mercadona","cheapestProductName":"RUAVIEJA Cremosa light Licor de crema de orujo con un 60% menos de azÃºcar botella 5 cl.","cheapestUnitPrice":1.0,"cheapestSource":"alcampo","comparison":{"mercadona":"9.21 € de media","alcampo":"10.31 € de media"}}`
+* **Respuesta:** `{"category":"licores","recommendedSource":"mercadona","cheapestProductName":"RUAVIEJA Cremosa light Licor de crema de orujo con un 60% menos de azúcar botella 5 cl.","cheapestUnitPrice":1.0,"cheapestSource":"alcampo","comparison":{"mercadona":"9.21 € de media","alcampo":"10.31 € de media"}}`
 
 ### 7. Historial de Fluctuación de un Producto (Compactado)
 Rastrea la evolución temporal de tarifas para un artículo concreto. Gracias al algoritmo de filtrado de ruido implementado en la lógica del negocio, este endpoint omite lecturas consecutivas idénticas, retornando únicamente los eventos cronológicos donde hubo un cambio real de precio o de estado de oferta.
 * **Endpoint:** `GET /api/history/{source}/{id}`
 * **Ejemplo de consulta (buscador de explorador web):**
   `http://localhost:7000/api/history/mercadona/21694`
-* **Respuesta:** `[{"ts":"2026-05-17T13:25:34.3949769","ss":"mercadona","id":"21694","name":"Bebida preparada de vodka sabor maracuyÃ¡ Knebep Passion fruit","normalizedName":"bebida preparada de vodka sabor maracuyÃ¡ knebep passion fruit","brand":"Other","category":"licores","unitPrice":1.3,"unit":"l","quantity":0.275,"onSale":false}]` (solo hay un precio porque no se ha registrado ninguno distinto para ese producto)
+* **Respuesta:** `[{"ts":"2026-05-17T13:25:34.3949769","ss":"mercadona","id":"21694","name":"Bebida preparada de vodka sabor maracuyá Knebep Passion fruit","normalizedName":"bebida preparada de vodka sabor maracuyÃ¡ knebep passion fruit","brand":"Other","category":"licores","unitPrice":1.3,"unit":"l","quantity":0.275,"onSale":false}]` (solo hay un precio porque no se ha registrado ninguno distinto para ese producto)
 
 
 ### HTML implementado por nosotros
 
-Además del HTML básico que nos proporciona Javalin hemos decicido implementar uno con el objetivo de facicilitar la búsqueda de la información útil dentro de nuestra APP. Para ello hemos creado un fichero index.HTML que genera la siguiente URL: `http://localhost:63342/Fooder/businessUnit/index.html?_ijt=n90ersugpups0oskbk0cbcjmq9&_ij_reload=RELOAD_ON_SAVE`
+Además del HTML básico que nos proporciona Javalin hemos decicido implementar uno con el objetivo de facicilitar la búsqueda de la información útil dentro de nuestra APP. Para ello hemos creado un fichero index.HTML que genera la siguiente URL: `file:///Users/macbookpro/IdeaProjects/Fooder/businessUnit/src/main/resources/index.html` (ejemplo, ejecutar HTML clicando 2 veces en el archivo)
 
 A continuación mostramos capturas de las posibilidades que tiene nuestra APP desde esta ubicación:
 
