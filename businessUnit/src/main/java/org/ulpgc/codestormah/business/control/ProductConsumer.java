@@ -10,7 +10,7 @@ import javax.jms.*;
 
 public class ProductConsumer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProductConsumer.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProductConsumer.class);
     private final String brokerUrl;
     private final String topicName;
     private final EventProcessor processor;
@@ -26,7 +26,7 @@ public class ProductConsumer {
         try {
             connectAndListen();
         } catch (Exception e) {
-            LOGGER.error("Failed to start ProductConsumer", e);
+            logger.error("Failed to start ProductConsumer", e);
         }
     }
 
@@ -44,7 +44,7 @@ public class ProductConsumer {
 
     private void attachConsumer(Session session) throws JMSException {
         MessageConsumer consumer = session.createDurableSubscriber(session.createTopic(topicName), "BusinessUnit_Sub");
-        LOGGER.info("Listening to ActiveMQ topic: {}", topicName);
+        logger.info("Listening to ActiveMQ topic: {}", topicName);
         consumer.setMessageListener(this::safeProcessMessage);
     }
 
@@ -52,12 +52,12 @@ public class ProductConsumer {
         try {
             processMessage(message);
         } catch (Exception e) {
-            LOGGER.error("Error processing JMS message", e);
+            logger.error("Error processing JMS message", e);
         }
     }
 
     private void processMessage(Message message) throws JMSException {
         if (message instanceof TextMessage tm) processor.processProduct(gson.fromJson(tm.getText(), Product.class));
-        else LOGGER.warn("Received non-text JMS message: {}", message.getClass().getSimpleName());
+        else logger.warn("Received non-text JMS message: {}", message.getClass().getSimpleName());
     }
 }

@@ -7,7 +7,7 @@ import org.ulpgc.codestormah.eventstore.control.FileEventStore;
 
 public class Main {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) throws Exception {
         validateArgs(args);
@@ -19,7 +19,7 @@ public class Main {
     }
 
     private static void startApplication(String[] args) throws Exception {
-        LOGGER.info("Event Store Builder started for source={}", args[2]);
+        logger.info("Event Store Builder started for source={}", args[2]);
         ActiveMQSubscriber.Config config = new ActiveMQSubscriber.Config(args[0], args[1], args[2]);
         new ActiveMQSubscriber(config, new FileEventStore(args[3])).start();
         Thread.currentThread().join();

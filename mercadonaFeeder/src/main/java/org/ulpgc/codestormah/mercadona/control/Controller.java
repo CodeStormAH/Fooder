@@ -1,4 +1,4 @@
-package org.ulpgc.codestormah.mercadona.controller;
+package org.ulpgc.codestormah.mercadona.control;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

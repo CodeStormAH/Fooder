@@ -1,4 +1,4 @@
-package org.ulpgc.codestormah.mercadona.controller;
+package org.ulpgc.codestormah.mercadona.control;
 
 import org.ulpgc.codestormah.mercadona.model.Product;
 import java.sql.*;
@@ -8,7 +8,7 @@ import java.util.logging.Level;
 
 public class DatabaseProductStore implements ProductStore {
 
-    private static final Logger LOGGER = Logger.getLogger(DatabaseProductStore.class.getName());
+    private static final Logger logger = Logger.getLogger(DatabaseProductStore.class.getName());
     private static final String CREATE_PRODUCTS_SQL = "CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, name TEXT, normalized_name TEXT, brand TEXT, category TEXT, amount REAL, unit TEXT);";
     private static final String CREATE_PRICES_SQL = "CREATE TABLE IF NOT EXISTS prices (id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, unit_price REAL, on_offer BOOLEAN, date TEXT, FOREIGN KEY(product_id) REFERENCES products(id));";
     private static final String INSERT_PRODUCTS_SQL = "INSERT OR IGNORE INTO products (id, name, normalized_name, brand, category, amount, unit) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -25,7 +25,7 @@ public class DatabaseProductStore implements ProductStore {
         try (Connection c = DriverManager.getConnection(dbPath)) {
             processSave(products, c);
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Database error", e);
+            logger.log(Level.SEVERE, "Database error", e);
         }
     }
 

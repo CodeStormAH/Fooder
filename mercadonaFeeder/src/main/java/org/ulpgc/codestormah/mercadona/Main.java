@@ -1,20 +1,20 @@
 package org.ulpgc.codestormah.mercadona;
 
-import org.ulpgc.codestormah.mercadona.controller.*;
+import org.ulpgc.codestormah.mercadona.control.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static org.ulpgc.codestormah.mercadona.config.CategoryLoader.load;
-import static org.ulpgc.codestormah.mercadona.controller.ActiveMQFactory.createStore;
+import static org.ulpgc.codestormah.mercadona.control.ActiveMQFactory.createStore;
 
 public class Main {
 
-    private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
+    private static final Logger logger = Logger.getLogger(Main.class.getName());
 
      static void main(String[] args) {
         try {
             executeApp(args);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Application failed", e);
+            logger.log(Level.SEVERE, "Application failed", e);
         }
     }
 
@@ -30,7 +30,7 @@ public class Main {
     }
 
     private static void startController(MercadonaFeeder feeder, ProductStore store) {
-        LOGGER.info("Starting Mercadona feeder system");
+        logger.info("Starting Mercadona feeder system");
         new Controller(feeder, store).startScheduler(-1);
     }
 }

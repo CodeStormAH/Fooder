@@ -1,4 +1,4 @@
-package org.ulpgc.codestormah.mercadona.controller;
+package org.ulpgc.codestormah.mercadona.control;
 
 import com.google.gson.*;
 import org.jsoup.Jsoup;

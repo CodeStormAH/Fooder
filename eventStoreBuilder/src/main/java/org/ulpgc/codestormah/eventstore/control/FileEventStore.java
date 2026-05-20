@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter;
 
 public class FileEventStore {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FileEventStore.class);
+    private static final Logger logger = LoggerFactory.getLogger(FileEventStore.class);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     private final Path root;
     private final Clock clock;
@@ -26,7 +26,7 @@ public class FileEventStore {
         try {
             processDispatch(event, topic, source);
         } catch (IOException e) {
-            LOGGER.error("Error writing event to store", e);
+            logger.error("Error writing event to store", e);
         }
     }
 

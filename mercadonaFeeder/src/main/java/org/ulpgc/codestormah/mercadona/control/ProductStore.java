@@ -1,4 +1,4 @@
-package org.ulpgc.codestormah.mercadona.controller;
+package org.ulpgc.codestormah.mercadona.control;
 import org.ulpgc.codestormah.mercadona.model.Product;
 import java.util.List;
 
