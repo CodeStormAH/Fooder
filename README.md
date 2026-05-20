@@ -1,4 +1,4 @@
-# Fooder APP 
+# Fooder
 
 ## Descripción del proyecto y propuesta de valor 
 
