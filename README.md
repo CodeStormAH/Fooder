@@ -172,21 +172,21 @@ Devuelve la lista completa de todos los productos pertenecientes a una categorí
 * **Endpoint:** `GET /api/products/{category}`
 * **Ejemplo de consulta (buscador de explorador web):**
   `http://localhost:7000/api/products/licores`
-* **Respuesta:** `[{"ts":"2026-05-17T13:22:26.626732Z","ss":"alcampo","id":"310fa12a-1a2a-39c5-8724-01241d69dc1e","name":"RUAVIEJA Cremosa light Licor de crema de orujo con un 60% menos de azÃºcar botella 5 cl.","normalizedName":"cremosa light licor de crema de orujo con un % menos de azÃºcar botella","brand":"RUAVIEJA","category":"licores","unitPrice":1.0,"unit":"l","quantity":0.05,"onSale":true},{"ts":"2026-05-17T13:22:29.220273Z","ss":"alcampo","id":"41000454-2ac3-32bb-8fed-145bbaf831e5","name":"PANIZO Licor de crema de orujo botella 5 cl.","normalizedName":"licor de crema de orujo botella","brand":"PANIZO","category":"licores","unitPrice":1.0,"unit":"l","quantity":0.05,"onSale":true}...`
+* **Respuesta:** `[{"ts":"2026-05-17T13:22:26.626732Z","ss":"alcampo","id":"310fa12a-1a2a-39c5-8724-01241d69dc1e","name":"RUAVIEJA Cremosa light Licor de crema de orujo con un 60% menos de azúcar botella 5 cl.","normalizedName":"cremosa light licor de crema de orujo con un % menos de azúcar botella","brand":"RUAVIEJA","category":"licores","unitPrice":1.0,"unit":"l","quantity":0.05,"onSale":true},{"ts":"2026-05-17T13:22:29.220273Z","ss":"alcampo","id":"41000454-2ac3-32bb-8fed-145bbaf831e5","name":"PANIZO Licor de crema de orujo botella 5 cl.","normalizedName":"licor de crema de orujo botella","brand":"PANIZO","category":"licores","unitPrice":1.0,"unit":"l","quantity":0.05,"onSale":true}...`
 
 ### 4. Obtener el Producto Más Barato de una Categoría
 Filtra la categoría seleccionada y extrae directamente el artículo con el menor precio del mercado actual.
 * **Endpoint:** `GET /api/products/{category}/cheapest`
 * **Ejemplo de consulta (buscador de explorador web):**
   `http://localhost:8080/api/products/licores/cheapest`
-* **Respuesta:** `{"ts":"2026-05-17T13:22:26.626732Z","ss":"alcampo","id":"310fa12a-1a2a-39c5-8724-01241d69dc1e","name":"RUAVIEJA Cremosa light Licor de crema de orujo con un 60% menos de azÃºcar botella 5 cl.","normalizedName":"cremosa light licor de crema de orujo con un % menos de azÃºcar botella","brand":"RUAVIEJA","category":"licores","unitPrice":1.0,"unit":"l","quantity":0.05,"onSale":true}`
+* **Respuesta:** `{"ts":"2026-05-17T13:22:26.626732Z","ss":"alcampo","id":"310fa12a-1a2a-39c5-8724-01241d69dc1e","name":"RUAVIEJA Cremosa light Licor de crema de orujo con un 60% menos de azúcar botella 5 cl.","normalizedName":"cremosa light licor de crema de orujo con un % menos de azúcar botella","brand":"RUAVIEJA","category":"licores","unitPrice":1.0,"unit":"l","quantity":0.05,"onSale":true}`
 
 ### 5. Obtener el Producto Más Caro de una Categoría
 Extrae el artículo con el mayor precio unitario dentro de la categoría proporcionada.
 * **Endpoint:** `GET /api/products/{category}/expensive`
 * **Ejemplo de consulta (buscador de explorador web):**
   `http://localhost:8080/api/products/licores/expensive`
-* **Respuesta:** `{"ts":"2026-05-17T13:25:34.3476878","ss":"mercadona","id":"28630","name":"Whisky escocÃ©s Black Label Johnnie Walker","normalizedName":"whisky escocÃ©s black label johnnie walker","brand":"Other","category":"licores","unitPrice":28.9,"unit":"l","quantity":0.7,"onSale":false}`
+* **Respuesta:** `{"ts":"2026-05-17T13:25:34.3476878","ss":"mercadona","id":"28630","name":"Whisky escocÃ©s Black Label Johnnie Walker","normalizedName":"whisky escocés black label johnnie walker","brand":"Other","category":"licores","unitPrice":28.9,"unit":"l","quantity":0.7,"onSale":false}`
 
 ### 6. Recomendación de Compra Inteligente por Categoría
 Consulta la vista materializada precalculada de recomendaciones. Este endpoint devuelve cuál es el supermercado idóneo para comprar globalmente esa categoría (basándose en la media aritmética de todos sus artículos), indica el producto más barato absoluto del momento y adjunta una comparativa de medias.
@@ -200,7 +200,7 @@ Rastrea la evolución temporal de tarifas para un artículo concreto. Gracias al
 * **Endpoint:** `GET /api/history/{source}/{id}`
 * **Ejemplo de consulta (buscador de explorador web):**
   `http://localhost:7000/api/history/mercadona/21694`
-* **Respuesta:** `[{"ts":"2026-05-17T13:25:34.3949769","ss":"mercadona","id":"21694","name":"Bebida preparada de vodka sabor maracuyá Knebep Passion fruit","normalizedName":"bebida preparada de vodka sabor maracuyÃ¡ knebep passion fruit","brand":"Other","category":"licores","unitPrice":1.3,"unit":"l","quantity":0.275,"onSale":false}]` (solo hay un precio porque no se ha registrado ninguno distinto para ese producto)
+* **Respuesta:** `[{"ts":"2026-05-17T13:25:34.3949769","ss":"mercadona","id":"21694","name":"Bebida preparada de vodka sabor maracuyá Knebep Passion fruit","normalizedName":"bebida preparada de vodka sabor maracuyá knebep passion fruit","brand":"Other","category":"licores","unitPrice":1.3,"unit":"l","quantity":0.275,"onSale":false}]` (solo hay un precio porque no se ha registrado ninguno distinto para ese producto)
 
 
 ### HTML implementado por nosotros
