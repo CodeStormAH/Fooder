@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 
 public class EventProcessor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EventProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(EventProcessor.class);
     private final ProductStore productStore;
     private final RecommendationStore recommendationStore;
     private final Gson gson = new Gson();
@@ -26,7 +26,7 @@ public class EventProcessor {
         try {
             executeProductProcessing(product);
         } catch (Exception e) {
-            LOGGER.error("Error processing Product object: {}", product, e);
+            logger.error("Error processing Product object: {}", product, e);
         }
     }
 
@@ -42,14 +42,14 @@ public class EventProcessor {
     public void loadHistoricalData(String eventStorePath) {
         Path root = Paths.get(eventStorePath);
         if (Files.exists(root)) tryWalkPath(root);
-        else LOGGER.warn("No historical event store found at path: {}", eventStorePath);
+        else logger.warn("No historical event store found at path: {}", eventStorePath);
     }
 
     private void tryWalkPath(Path root) {
         try (Stream<Path> paths = Files.walk(root)) {
             processEventPaths(paths);
         } catch (IOException e) {
-            LOGGER.error("Error walking event store directory", e);
+            logger.error("Error walking event store directory", e);
         }
     }
 
@@ -61,7 +61,7 @@ public class EventProcessor {
         try (Stream<String> lines = Files.lines(path, StandardCharsets.UTF_8)) {
             lines.forEach(this::parseAndProcessLine);
         } catch (IOException e) {
-            LOGGER.error("Error reading event file: {}", path, e);
+            logger.error("Error reading event file: {}", path, e);
         }
     }
 
@@ -69,7 +69,7 @@ public class EventProcessor {
         try {
             processProduct(gson.fromJson(line, Product.class));
         } catch (Exception ex) {
-            LOGGER.error("Error parsing historical JSON line: {}", line, ex);
+            logger.error("Error parsing historical JSON line: {}", line, ex);
         }
     }
 }

@@ -283,7 +283,7 @@ Componente optimizado para la ingesta de datos a gran velocidad mediante el cons
 * `CategoryLoader`: Clase de utilidad encargada de leer y parsear el archivo de recursos `categories.json` para inyectar la lista de identificadores oficiales de las categorías a consultar en la API.
 
 
-* **org.ulpgc.codestormah.mercadona.controller**
+* **org.ulpgc.codestormah.mercadona.control**
 * `ProductFeeder` / `MercadonaFeeder`: Componentes encargados de realizar las llamadas HTTP asíncronas hacia los endpoints de Mercadona y capturar los payloads JSON nativos.
 * `Controller`: Coordina el flujo principal del módulo, tomando las categorías cargadas, procesando las respuestas de la API y enviándolas al bróker.
 * `ProductStore` / `DatabaseProductStore`: Gestionan el almacenamiento intermedio o la canalización de los objetos de catálogo capturados.

@@ -10,7 +10,7 @@ import org.ulpgc.codestormah.business.control.ProductStore;
 
 public class Main {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
      static void main(String[] args) {
         if (args.length < 4) exitWithUsage();
@@ -18,7 +18,7 @@ public class Main {
     }
 
     private static void exitWithUsage() {
-        LOGGER.error("Invalid arguments. Usage: <BrokerURL> <TopicName> <EventStorePath> <ApiPort>");
+        logger.error("Invalid arguments. Usage: <BrokerURL> <TopicName> <EventStorePath> <ApiPort>");
         System.exit(1);
     }
 
@@ -36,18 +36,18 @@ public class Main {
     }
 
     private static void loadHistory(String path, EventProcessor processor) {
-        LOGGER.info("Loading historical data from: {}", path);
+        logger.info("Loading historical data from: {}", path);
         processor.loadHistoricalData(path);
     }
 
     private static void startConsumer(String broker, String topic, EventProcessor p) {
-        LOGGER.info("Starting ProductConsumer (broker={}, topic={})", broker, topic);
+        logger.info("Starting ProductConsumer (broker={}, topic={})", broker, topic);
         new ProductConsumer(broker, topic, p).start();
     }
 
     private static void startApi(int port, ProductStore ps, RecommendationStore rs) {
-        LOGGER.info("Starting API on port {}", port);
+        logger.info("Starting API on port {}", port);
         new UIService(ps, rs, port).start();
-        LOGGER.info("Business Unit started successfully (Lambda architecture active)");
+        logger.info("Business Unit started successfully (Lambda architecture active)");
     }
 }

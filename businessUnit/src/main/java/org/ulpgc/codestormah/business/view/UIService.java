@@ -10,7 +10,7 @@ import org.ulpgc.codestormah.business.model.Recommendation;
 
 public class UIService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(UIService.class);
+    private static final Logger logger = LoggerFactory.getLogger(UIService.class);
     private final ProductStore productStore;
     private final RecommendationStore recommendationStore;
     private final int port;
@@ -24,7 +24,7 @@ public class UIService {
     public void start() {
         Javalin app = Javalin.create(c -> c.plugins.enableCors(cors -> cors.add(CorsPluginConfig::anyHost))).start(port);
         setupRoutes(app);
-        LOGGER.info("🚀 API REST started on port {}", port);
+        logger.info("🚀 API REST started on port {}", port);
     }
 
     private void setupRoutes(Javalin app) {

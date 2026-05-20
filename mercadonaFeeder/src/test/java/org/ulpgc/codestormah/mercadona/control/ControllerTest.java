@@ -1,4 +1,4 @@
-package org.ulpgc.codestormah.mercadona.controller;
+package org.ulpgc.codestormah.mercadona.control;
 
 import org.junit.jupiter.api.Test;
 import org.ulpgc.codestormah.mercadona.model.Product;
